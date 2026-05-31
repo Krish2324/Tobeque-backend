@@ -38,7 +38,9 @@ const getProducts = async (req, res, next) => {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { sku: { [Op.like]: `%${search}%` } },
-        { shortDescription: { [Op.like]: `%${search}%` } }
+        { barcode: { [Op.like]: `%${search}%` } },
+        { shortDescription: { [Op.like]: `%${search}%` } },
+        { fullDescription: { [Op.like]: `%${search}%` } }
       ];
     }
 
