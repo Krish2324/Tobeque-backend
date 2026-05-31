@@ -39,21 +39,21 @@ const storage = multer.diskStorage({
 
 // File Filter rules
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = /jpeg|jpg|png|gif|webp/;
+  const allowedExtensions = /jpeg|jpg|png|gif|webp|mp4|webm|ogg|mov/i;
   const isMatch = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
   const mimeTypeMatch = allowedExtensions.test(file.mimetype);
 
   if (isMatch && mimeTypeMatch) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files (JPEG, JPG, PNG, GIF, WEBP) are allowed!'), false);
+    cb(new Error('Only image and video files (JPEG, JPG, PNG, GIF, WEBP, MP4, WEBM, OGG, MOV) are allowed!'), false);
   }
 };
 
 // Initialize Multer
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB Max
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB Max
   fileFilter: fileFilter
 });
 
