@@ -49,6 +49,33 @@ const User = sequelize.define('User', {
     type: DataTypes.DATE,
     allowNull: true,
     field: 'otp_expiry'
+  },
+  // Additional fields for fashion profile
+  address: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  city: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  state: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  zipCode: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'zip_code'
+  },
+  gender: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  sizePreference: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'size_preference'
   }
 });
 

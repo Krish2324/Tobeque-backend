@@ -108,7 +108,13 @@ const verifyOtp = async (req, res, next) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        status: user.status
+        status: user.status,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        gender: user.gender,
+        sizePreference: user.sizePreference
       }
     });
   } catch (error) {
@@ -164,7 +170,7 @@ const getUserOrders = async (req, res, next) => {
   }
 };
 
-// @desc    Update user profile details (name, email)
+// @desc    Update user profile details (name, email, address, sizes)
 // @route   PUT /api/user-auth/profile
 // @access  Private (user)
 const updateUserProfile = async (req, res, next) => {
@@ -175,9 +181,15 @@ const updateUserProfile = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    user.firstName = req.body.firstName || user.firstName;
-    user.lastName = req.body.lastName || user.lastName;
-    user.email = req.body.email || user.email;
+    if (req.body.firstName !== undefined) user.firstName = req.body.firstName;
+    if (req.body.lastName !== undefined) user.lastName = req.body.lastName;
+    if (req.body.email !== undefined) user.email = req.body.email;
+    if (req.body.address !== undefined) user.address = req.body.address;
+    if (req.body.city !== undefined) user.city = req.body.city;
+    if (req.body.state !== undefined) user.state = req.body.state;
+    if (req.body.zipCode !== undefined) user.zipCode = req.body.zipCode;
+    if (req.body.gender !== undefined) user.gender = req.body.gender;
+    if (req.body.sizePreference !== undefined) user.sizePreference = req.body.sizePreference;
 
     await user.save();
 
@@ -188,7 +200,14 @@ const updateUserProfile = async (req, res, next) => {
         phone: user.phone,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        status: user.status,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        gender: user.gender,
+        sizePreference: user.sizePreference
       }
     });
   } catch (error) {
