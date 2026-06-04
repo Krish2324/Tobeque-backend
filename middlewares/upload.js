@@ -19,6 +19,8 @@ const storage = multer.diskStorage({
       folder += 'products/';
     } else if (req.originalUrl.includes('banners')) {
       folder += 'banners/';
+    } else if (req.originalUrl.includes('season-collection')) {
+      folder += 'season/';
     } else if (req.originalUrl.includes('settings') || req.originalUrl.includes('site')) {
       folder += 'site/';
     } else {

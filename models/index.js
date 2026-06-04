@@ -14,6 +14,7 @@ const Banner = require('./banner');
 const InventoryLog = require('./inventoryLog');
 const AdminLog = require('./adminLog');
 const Setting = require('./setting');
+const SeasonCollection = require('./seasonCollection');
 
 // === Category Associations (Nested/Self-referential) ===
 Category.hasMany(Category, { as: 'subcategories', foreignKey: 'parentId', onDelete: 'CASCADE' });
@@ -61,6 +62,10 @@ InventoryLog.belongsTo(Admin, { foreignKey: 'adminId', as: 'admin' });
 Admin.hasMany(AdminLog, { foreignKey: 'adminId', onDelete: 'CASCADE' });
 AdminLog.belongsTo(Admin, { foreignKey: 'adminId', as: 'admin' });
 
+// === Season Collection Associations ===
+Product.hasMany(SeasonCollection, { as: 'seasonCollectionItems', foreignKey: 'productId', onDelete: 'CASCADE' });
+SeasonCollection.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+
 module.exports = {
   sequelize,
   Admin,
@@ -77,5 +82,6 @@ module.exports = {
   Banner,
   InventoryLog,
   AdminLog,
-  Setting
+  Setting,
+  SeasonCollection
 };
