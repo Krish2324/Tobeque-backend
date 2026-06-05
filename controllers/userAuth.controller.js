@@ -215,10 +215,97 @@ const updateUserProfile = async (req, res, next) => {
   }
 };
 
+// @desc    Place a new order
+// @route   POST /api/user-auth/orders
+// @access  Private (user)
+const createOrder = async (req, res, next) => {
+  try {
+    const { shippingAddress, items } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items in order' });
+    }
+
+    // Generate unique order number
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomStr = Math.floor(1000 + Math.random() * 9000);
+    const orderNumber = `ORD-${dateStr}-${randomStr}`;
+
+    let subtotal = 0;
+
+    // Process items and check stock
+    const processedItems = [];
+    for (const item of items) {
+      const product = await Product.findByPk(item.productId);
+      if (!product) {
+        return res.status(404).json({ success: false, error: `Product not found for ID ${item.productId}` });
+      }
+      
+      const price = parseFloat(item.price);
+      subtotal += price * item.quantity;
+      
+      processedItems.push({
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        price: price,
+        quantity: item.quantity,
+        variantDetails: item.variantDetails || null
+      });
+    }
+
+    // Tax & Shipping logic can be added later if needed. Defaults to 0 here.
+    const totalAmount = subtotal;
+
+    // Create the order
+    const order = await Order.create({
+      userId: req.user.id,
+      orderNumber,
+      subtotal,
+      totalAmount,
+      orderStatus: 'pending',
+      paymentStatus: 'paid', // Dummy success
+      paymentMethod: 'card',
+      shippingStatus: 'pending',
+      shippingAddress: shippingAddress || req.user.address || 'N/A',
+      billingAddress: shippingAddress || req.user.address || 'N/A'
+    });
+
+    // Create order items and deduct inventory
+    for (const pItem of processedItems) {
+      await OrderItem.create({
+        orderId: order.id,
+        productId: pItem.productId,
+        productName: pItem.productName,
+        sku: pItem.sku,
+        price: pItem.price,
+        quantity: pItem.quantity,
+        variantDetails: pItem.variantDetails
+      });
+
+      // Deduct inventory
+      const productToUpdate = await Product.findByPk(pItem.productId);
+      if (productToUpdate) {
+        productToUpdate.stockQuantity = Math.max(0, productToUpdate.stockQuantity - pItem.quantity);
+        await productToUpdate.save();
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      order
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   getUserProfile,
   getUserOrders,
-  updateUserProfile
+  updateUserProfile,
+  createOrder
 };

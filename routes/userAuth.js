@@ -5,7 +5,8 @@ const {
   verifyOtp,
   getUserProfile,
   getUserOrders,
-  updateUserProfile
+  updateUserProfile,
+  createOrder
 } = require('../controllers/userAuth.controller');
 const { protectUser } = require('../middlewares/userAuth');
 
@@ -17,5 +18,6 @@ router.post('/verify-otp', verifyOtp);
 router.get('/profile', protectUser, getUserProfile);
 router.put('/profile', protectUser, updateUserProfile);
 router.get('/orders', protectUser, getUserOrders);
+router.post('/orders', protectUser, createOrder);
 
 module.exports = router;
