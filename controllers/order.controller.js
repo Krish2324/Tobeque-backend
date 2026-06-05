@@ -84,9 +84,19 @@ const getOrderById = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
+    let orderData = order.toJSON();
+    try {
+      if (typeof orderData.shippingAddress === 'string') {
+        orderData.shippingAddress = JSON.parse(orderData.shippingAddress);
+      }
+      if (typeof orderData.billingAddress === 'string') {
+        orderData.billingAddress = JSON.parse(orderData.billingAddress);
+      }
+    } catch(e) {}
+
     res.json({
       success: true,
-      order
+      order: orderData
     });
   } catch (error) {
     next(error);

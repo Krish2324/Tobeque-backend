@@ -114,7 +114,7 @@ const verifyOtp = async (req, res, next) => {
         state: user.state,
         zipCode: user.zipCode,
         gender: user.gender,
-        sizePreference: user.sizePreference
+        profilePhoto: user.profilePhoto
       }
     });
   } catch (error) {
@@ -189,7 +189,6 @@ const updateUserProfile = async (req, res, next) => {
     if (req.body.state !== undefined) user.state = req.body.state;
     if (req.body.zipCode !== undefined) user.zipCode = req.body.zipCode;
     if (req.body.gender !== undefined) user.gender = req.body.gender;
-    if (req.body.sizePreference !== undefined) user.sizePreference = req.body.sizePreference;
 
     await user.save();
 
@@ -207,7 +206,7 @@ const updateUserProfile = async (req, res, next) => {
         state: user.state,
         zipCode: user.zipCode,
         gender: user.gender,
-        sizePreference: user.sizePreference
+        profilePhoto: user.profilePhoto
       }
     });
   } catch (error) {
@@ -220,7 +219,7 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Private (user)
 const createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, items } = req.body;
+    const { shippingAddress, items, customerName, customerPhone } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'No items in order' });
@@ -257,6 +256,19 @@ const createOrder = async (req, res, next) => {
     // Tax & Shipping logic can be added later if needed. Defaults to 0 here.
     const totalAmount = subtotal;
 
+    // Format address object to match Admin OrderDetail.jsx expectation
+    const finalAddress = typeof shippingAddress === 'object' ? shippingAddress : {
+      name: customerName || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Customer',
+      phone: customerPhone || req.user.phone || '',
+      street: shippingAddress || req.user.address || 'N/A',
+      city: req.user.city || '',
+      state: req.user.state || '',
+      zip: req.user.zipCode || '',
+      country: 'India'
+    };
+
+    const addressString = JSON.stringify(finalAddress);
+
     // Create the order
     const order = await Order.create({
       userId: req.user.id,
@@ -267,8 +279,8 @@ const createOrder = async (req, res, next) => {
       paymentStatus: 'paid', // Dummy success
       paymentMethod: 'card',
       shippingStatus: 'pending',
-      shippingAddress: shippingAddress || req.user.address || 'N/A',
-      billingAddress: shippingAddress || req.user.address || 'N/A'
+      shippingAddress: addressString,
+      billingAddress: addressString
     });
 
     // Create order items and deduct inventory
@@ -301,11 +313,53 @@ const createOrder = async (req, res, next) => {
   }
 };
 
+// @desc    Upload user profile photo
+// @route   POST /api/user-auth/profile/photo
+// @access  Private (user)
+const uploadProfilePhoto = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No image file provided' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const photoUrl = `/uploads/users/${req.file.filename}`;
+    user.profilePhoto = photoUrl;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile photo updated successfully',
+      user: {
+        id: user.id,
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        status: user.status,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zipCode: user.zipCode,
+        gender: user.gender,
+        profilePhoto: user.profilePhoto
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   getUserProfile,
   getUserOrders,
   updateUserProfile,
-  createOrder
+  createOrder,
+  uploadProfilePhoto
 };

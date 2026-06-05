@@ -23,6 +23,8 @@ const storage = multer.diskStorage({
       folder += 'season/';
     } else if (req.originalUrl.includes('settings') || req.originalUrl.includes('site')) {
       folder += 'site/';
+    } else if (req.originalUrl.includes('profile')) {
+      folder += 'users/';
     } else {
       folder += 'misc/';
     }

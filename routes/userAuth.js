@@ -6,9 +6,11 @@ const {
   getUserProfile,
   getUserOrders,
   updateUserProfile,
-  createOrder
+  createOrder,
+  uploadProfilePhoto
 } = require('../controllers/userAuth.controller');
 const { protectUser } = require('../middlewares/userAuth');
+const upload = require('../middlewares/upload');
 
 // Public routes
 router.post('/send-otp', sendOtp);
@@ -19,5 +21,6 @@ router.get('/profile', protectUser, getUserProfile);
 router.put('/profile', protectUser, updateUserProfile);
 router.get('/orders', protectUser, getUserOrders);
 router.post('/orders', protectUser, createOrder);
+router.post('/profile/photo', protectUser, upload.single('photo'), uploadProfilePhoto);
 
 module.exports = router;

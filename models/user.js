@@ -72,10 +72,10 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  sizePreference: {
+  profilePhoto: {
     type: DataTypes.STRING,
     allowNull: true,
-    field: 'size_preference'
+    field: 'profile_photo'
   }
 });
 
