@@ -34,13 +34,11 @@ const updateSettings = async (req, res, next) => {
       settingsPayload['site_logo'] = `/uploads/site/${req.file.filename}`;
     }
 
-    const updatePromises = Object.keys(settingsPayload).map(async (key) => {
+    for (const key of Object.keys(settingsPayload)) {
       const [settingRecord] = await Setting.findOrCreate({ where: { key } });
       settingRecord.value = settingsPayload[key] !== null ? settingsPayload[key].toString() : '';
-      return await settingRecord.save();
-    });
-
-    await Promise.all(updatePromises);
+      await settingRecord.save();
+    }
 
     await AdminLog.create({
       adminId: req.admin.id,
