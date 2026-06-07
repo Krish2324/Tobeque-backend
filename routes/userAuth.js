@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   sendOtp,
   verifyOtp,
+  validateCoupon,
   getUserProfile,
   getUserOrders,
   updateUserProfile,
@@ -15,6 +16,7 @@ const upload = require('../middlewares/upload');
 // Public routes
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
+router.post('/validate-coupon', validateCoupon);
 
 // Protected user routes
 router.get('/profile', protectUser, getUserProfile);

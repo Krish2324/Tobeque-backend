@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User, Order, OrderItem, Product } = require('../models');
+const { User, Order, OrderItem, Product, Coupon } = require('../models');
 
 // Development permanent OTP — change to real OTP generation in production
 const DEV_OTP = '123456';
@@ -122,6 +122,59 @@ const verifyOtp = async (req, res, next) => {
   }
 };
 
+// @desc    Validate a coupon code
+// @route   POST /api/user-auth/validate-coupon
+// @access  Public
+const validateCoupon = async (req, res, next) => {
+  try {
+    const { code, cartTotal } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'Coupon code is required' });
+    }
+
+    const codeUpper = code.toString().toUpperCase().trim();
+    const coupon = await Coupon.findOne({ where: { code: codeUpper } });
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, error: 'Invalid coupon code' });
+    }
+
+    if (!coupon.status) {
+      return res.status(400).json({ success: false, error: 'This coupon is no longer active' });
+    }
+
+    const now = new Date();
+    if (coupon.startDate && new Date(coupon.startDate) > now) {
+      return res.status(400).json({ success: false, error: 'This coupon is not active yet' });
+    }
+
+    if (coupon.expiryDate && new Date(coupon.expiryDate) < now) {
+      return res.status(400).json({ success: false, error: 'This coupon has expired' });
+    }
+
+    if (coupon.usageCount >= coupon.usageLimit) {
+      return res.status(400).json({ success: false, error: 'This coupon has reached its usage limit' });
+    }
+
+    if (cartTotal && parseFloat(cartTotal) < parseFloat(coupon.minOrderAmount)) {
+      return res.status(400).json({ success: false, error: `Minimum order amount of ₹${coupon.minOrderAmount} required` });
+    }
+
+    res.json({
+      success: true,
+      coupon: {
+        code: coupon.code,
+        type: coupon.type,
+        discountValue: coupon.discountValue,
+        minOrderAmount: coupon.minOrderAmount
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get logged-in user's profile
 // @route   GET /api/user-auth/profile
 // @access  Private (user)
@@ -219,7 +272,7 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Private (user)
 const createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, items, customerName, customerPhone } = req.body;
+    const { shippingAddress, items, customerName, customerPhone, couponCode } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'No items in order' });
@@ -253,8 +306,39 @@ const createOrder = async (req, res, next) => {
       });
     }
 
+    let discountAmount = 0;
+    let appliedCouponCode = null;
+
+    if (couponCode) {
+      const codeUpper = couponCode.toString().toUpperCase().trim();
+      const coupon = await Coupon.findOne({ where: { code: codeUpper, status: true } });
+      
+      if (coupon) {
+        const now = new Date();
+        const isStarted = !coupon.startDate || new Date(coupon.startDate) <= now;
+        const isNotExpired = !coupon.expiryDate || new Date(coupon.expiryDate) >= now;
+        const hasUsageLeft = coupon.usageCount < coupon.usageLimit;
+        const meetsMinOrder = subtotal >= parseFloat(coupon.minOrderAmount);
+
+        if (isStarted && isNotExpired && hasUsageLeft && meetsMinOrder) {
+          appliedCouponCode = coupon.code;
+          if (coupon.type === 'percentage') {
+            discountAmount = (subtotal * parseFloat(coupon.discountValue)) / 100;
+          } else {
+            discountAmount = parseFloat(coupon.discountValue);
+          }
+          // Cap discount at subtotal
+          if (discountAmount > subtotal) discountAmount = subtotal;
+          
+          // Increment usage count
+          coupon.usageCount += 1;
+          await coupon.save();
+        }
+      }
+    }
+
     // Tax & Shipping logic can be added later if needed. Defaults to 0 here.
-    const totalAmount = subtotal;
+    const totalAmount = subtotal - discountAmount;
 
     // Format address object to match Admin OrderDetail.jsx expectation
     const finalAddress = typeof shippingAddress === 'object' ? shippingAddress : {
@@ -280,7 +364,9 @@ const createOrder = async (req, res, next) => {
       paymentMethod: 'card',
       shippingStatus: 'pending',
       shippingAddress: addressString,
-      billingAddress: addressString
+      billingAddress: addressString,
+      discountAmount,
+      couponCode: appliedCouponCode
     });
 
     // Create order items and deduct inventory
@@ -357,6 +443,7 @@ const uploadProfilePhoto = async (req, res, next) => {
 module.exports = {
   sendOtp,
   verifyOtp,
+  validateCoupon,
   getUserProfile,
   getUserOrders,
   updateUserProfile,
