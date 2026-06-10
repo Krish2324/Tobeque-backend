@@ -80,6 +80,33 @@ app.get('/api/status', (req, res) => {
 // Global central error handler middleware
 app.use(errorHandler);
 
+// Safe migration: adds columns that exist in the model but not yet in the DB
+const runSafeMigrations = async () => {
+  const migrations = [
+    // Orders table - add coupon_code if missing
+    { table: 'orders', column: 'coupon_code', sql: `ALTER TABLE orders ADD COLUMN coupon_code VARCHAR(255) NULL` },
+    // Categories table - add display_type if missing
+    { table: 'categories', column: 'display_type', sql: `ALTER TABLE categories ADD COLUMN display_type VARCHAR(255) NULL DEFAULT 'Default'` },
+    // Categories table - add google_product_category if missing
+    { table: 'categories', column: 'google_product_category', sql: `ALTER TABLE categories ADD COLUMN google_product_category VARCHAR(255) NULL` },
+  ];
+
+  for (const m of migrations) {
+    try {
+      // Check if column already exists by querying table info
+      const [results] = await sequelize.query(`PRAGMA table_info(${m.table})`);
+      const exists = results.some(col => col.name === m.column);
+      if (!exists) {
+        await sequelize.query(m.sql);
+        console.log(`Migration: Added column '${m.column}' to table '${m.table}'.`);
+      }
+    } catch (err) {
+      // Column may already exist in non-SQLite DB — log and continue
+      console.warn(`Migration skipped for '${m.table}.${m.column}':`, err.message);
+    }
+  }
+};
+
 // Connect DB & Start Server
 const startServer = async () => {
   try {
@@ -92,7 +119,10 @@ const startServer = async () => {
     await sequelize.sync();
     console.log('Database schemas synced.');
 
-    // 3. Bind port and start listening
+    // 3. Run safe column migrations for new fields added after initial sync
+    await runSafeMigrations();
+
+    // 4. Bind port and start listening
     app.listen(PORT, () => {
       console.log(`===================================================`);
       console.log(`   SERVER IS RUNNING IN ${process.env.NODE_ENV.toUpperCase()} MODE`);
@@ -106,3 +136,4 @@ const startServer = async () => {
 };
 
 startServer();
+
