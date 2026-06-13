@@ -5,13 +5,10 @@ const { Review, Product, User, AdminLog } = require('../models');
 // @access  Private
 const getReviews = async (req, res, next) => {
   try {
-    const reviews = await Review.findAll({
-      include: [
-        { model: Product, as: 'product', attributes: ['id', 'name', 'sku', 'thumbnail'] },
-        { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] }
-      ],
-      order: [['createdAt', 'DESC']]
-    });
+    const reviews = await Review.find()
+      .populate('product', 'id name sku thumbnail')
+      .populate('user', 'id firstName lastName email')
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -30,9 +27,7 @@ const toggleReviewApproval = async (req, res, next) => {
     const { id } = req.params;
     const { approve } = req.body; // boolean
 
-    const review = await Review.findByPk(id, {
-      include: [{ model: Product, as: 'product', attributes: ['name'] }]
-    });
+    const review = await Review.findById(id).populate('product', 'name');
 
     if (!review) {
       return res.status(404).json({ success: false, error: 'Review not found' });
@@ -43,7 +38,7 @@ const toggleReviewApproval = async (req, res, next) => {
 
     await AdminLog.create({
       adminId: req.admin.id,
-      action: `${review.isApproved ? 'Approved' : 'Unapproved'} review for product: ${review.product.name}`,
+      action: `${review.isApproved ? 'Approved' : 'Unapproved'} review for product: ${review.product ? review.product.name : 'Unknown Product'}`,
       entityType: 'review',
       entityId: review.id,
       ipAddress: req.ip
@@ -64,7 +59,7 @@ const toggleReviewApproval = async (req, res, next) => {
 // @access  Private
 const deleteReview = async (req, res, next) => {
   try {
-    const review = await Review.findByPk(req.params.id);
+    const review = await Review.findById(req.params.id);
 
     if (!review) {
       return res.status(404).json({ success: false, error: 'Review not found' });
@@ -72,7 +67,7 @@ const deleteReview = async (req, res, next) => {
 
     const reviewId = review.id;
 
-    await review.destroy();
+    await review.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,

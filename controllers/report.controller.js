@@ -1,5 +1,4 @@
-const { Order, OrderItem, User, Product, sequelize } = require('../models');
-const { Op } = require('sequelize');
+const { Order, OrderItem, User, Product } = require('../models');
 
 // @desc    Generate Sales and Financial Reports
 // @route   GET /api/reports/sales
@@ -14,26 +13,23 @@ const getSalesReport = async (req, res, next) => {
 
     if (startDate && endDate) {
       where.createdAt = {
-        [Op.between]: [new Date(startDate + ' 00:00:00'), new Date(endDate + ' 23:59:59')]
+        $gte: new Date(startDate + ' 00:00:00'),
+        $lte: new Date(endDate + ' 23:59:59')
       };
     } else if (startDate) {
       where.createdAt = {
-        [Op.gte]: new Date(startDate + ' 00:00:00')
+        $gte: new Date(startDate + ' 00:00:00')
       };
     } else if (endDate) {
       where.createdAt = {
-        [Op.lte]: new Date(endDate + ' 23:59:59')
+        $lte: new Date(endDate + ' 23:59:59')
       };
     }
 
     // Query aggregates
-    const orders = await Order.findAll({
-      where,
-      order: [['createdAt', 'DESC']],
-      include: [
-        { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] }
-      ]
-    });
+    const orders = await Order.find(where)
+      .sort({ createdAt: -1 })
+      .populate('user', 'id firstName lastName email');
 
     let totalRevenue = 0;
     let totalTax = 0;
@@ -51,25 +47,50 @@ const getSalesReport = async (req, res, next) => {
 
     const averageOrderValue = orders.length > 0 ? (totalRevenue / orders.length) : 0.00;
 
-    // Fetch product sales breakdown
-    const productSales = await OrderItem.findAll({
-      attributes: [
-        'productId',
-        'productName',
-        'sku',
-        [sequelize.fn('SUM', sequelize.col('OrderItem.quantity')), 'quantitySold'],
-        [sequelize.fn('SUM', sequelize.literal('OrderItem.quantity * OrderItem.price')), 'revenueGenerated']
-      ],
-      include: [
-        {
-          model: Order,
-          attributes: [],
-          where
+    // Fetch product sales breakdown using Mongoose Lookup aggregation
+    const orderMatch = {
+      'order.paymentStatus': 'paid'
+    };
+    if (startDate || endDate) {
+      orderMatch['order.createdAt'] = {};
+      if (startDate) {
+        orderMatch['order.createdAt'].$gte = new Date(startDate + ' 00:00:00');
+      }
+      if (endDate) {
+        orderMatch['order.createdAt'].$lte = new Date(endDate + ' 23:59:59');
+      }
+    }
+
+    const rawProductSales = await OrderItem.aggregate([
+      {
+        $lookup: {
+          from: 'orders',
+          localField: 'order',
+          foreignField: '_id',
+          as: 'order'
         }
-      ],
-      group: ['OrderItem.product_id', 'OrderItem.product_name', 'OrderItem.sku'],
-      order: [[sequelize.literal('quantitySold'), 'DESC']]
-    });
+      },
+      { $unwind: '$order' },
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: '$product',
+          productName: { $first: '$productName' },
+          sku: { $first: '$sku' },
+          quantitySold: { $sum: '$quantity' },
+          revenueGenerated: { $sum: { $multiply: ['$quantity', '$price'] } }
+        }
+      },
+      { $sort: { quantitySold: -1 } }
+    ]);
+
+    const productSales = rawProductSales.map(item => ({
+      productId: item._id,
+      productName: item.productName,
+      sku: item.sku,
+      quantitySold: item.quantitySold,
+      revenueGenerated: parseFloat(item.revenueGenerated.toFixed(2))
+    }));
 
     res.json({
       success: true,

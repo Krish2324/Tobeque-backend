@@ -5,7 +5,7 @@ const { Coupon, AdminLog } = require('../models');
 // @access  Private
 const getCoupons = async (req, res, next) => {
   try {
-    const coupons = await Coupon.findAll({ order: [['id', 'DESC']] });
+    const coupons = await Coupon.find().sort({ createdAt: -1 });
     res.json({
       success: true,
       coupons
@@ -24,7 +24,7 @@ const createCoupon = async (req, res, next) => {
 
     const codeUpper = code.toString().toUpperCase().trim();
 
-    const couponExists = await Coupon.findOne({ where: { code: codeUpper } });
+    const couponExists = await Coupon.findOne({ code: codeUpper });
     if (couponExists) {
       return res.status(400).json({ success: false, error: `Coupon code '${codeUpper}' already exists` });
     }
@@ -62,7 +62,7 @@ const createCoupon = async (req, res, next) => {
 // @access  Private
 const updateCoupon = async (req, res, next) => {
   try {
-    const coupon = await Coupon.findByPk(req.params.id);
+    const coupon = await Coupon.findById(req.params.id);
 
     if (!coupon) {
       return res.status(404).json({ success: false, error: 'Coupon not found' });
@@ -73,7 +73,7 @@ const updateCoupon = async (req, res, next) => {
     if (code) {
       const codeUpper = code.toString().toUpperCase().trim();
       if (codeUpper !== coupon.code) {
-        const couponExists = await Coupon.findOne({ where: { code: codeUpper } });
+        const couponExists = await Coupon.findOne({ code: codeUpper });
         if (couponExists) {
           return res.status(400).json({ success: false, error: `Coupon code '${codeUpper}' already exists` });
         }
@@ -113,7 +113,7 @@ const updateCoupon = async (req, res, next) => {
 // @access  Private
 const deleteCoupon = async (req, res, next) => {
   try {
-    const coupon = await Coupon.findByPk(req.params.id);
+    const coupon = await Coupon.findById(req.params.id);
 
     if (!coupon) {
       return res.status(404).json({ success: false, error: 'Coupon not found' });
@@ -122,7 +122,7 @@ const deleteCoupon = async (req, res, next) => {
     const couponCode = coupon.code;
     const couponId = coupon.id;
 
-    await coupon.destroy();
+    await coupon.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,

@@ -1,82 +1,65 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-const User = sequelize.define('User', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const UserSchema = new mongoose.Schema({
   firstName: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'first_name'
+    type: String,
+    required: true
   },
   lastName: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'last_name'
+    type: String,
+    required: true
   },
   email: {
-    type: DataTypes.STRING,
-    allowNull: true,
+    type: String,
+    required: true,
     unique: true,
-    validate: {
-      isEmail: true
-    }
+    match: [/.+\@.+\..+/, 'Please fill a valid email address']
   },
   password: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String,
+    required: true
   },
   phone: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true
+    type: String
   },
   status: {
-    type: DataTypes.ENUM('active', 'blocked'),
-    allowNull: false,
-    defaultValue: 'active'
+    type: String,
+    enum: ['active', 'blocked'],
+    default: 'active'
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   },
-  // OTP fields for mobile login
-  otpCode: {
-    type: DataTypes.STRING(6),
-    allowNull: true,
-    field: 'otp_code'
-  },
-  otpExpiry: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    field: 'otp_expiry'
-  },
-  // Additional fields for fashion profile
-  address: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  city: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  state: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  zipCode: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'zip_code'
-  },
-  gender: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  profilePhoto: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'profile_photo'
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = User;
+// Hooks: Encrypt password using bcrypt
+UserSchema.pre('save', async function () {
+  if (!this.isModified('password')) {
+    return;
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Match password helper
+UserSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+module.exports = mongoose.model('User', UserSchema);

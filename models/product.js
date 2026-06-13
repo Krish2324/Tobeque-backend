@@ -1,170 +1,162 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const Product = sequelize.define('Product', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const ProductSchema = new mongoose.Schema({
   name: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: String,
+    required: true
   },
   slug: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
+    required: true,
     unique: true
   },
   sku: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
+    required: true,
     unique: true
   },
   barcode: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String
   },
   shortDescription: {
-    type: DataTypes.STRING(500),
-    allowNull: true,
-    field: 'short_description'
+    type: String
   },
   fullDescription: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'full_description'
+    type: String
+  },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand',
+    default: null
   },
   price: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.00
+    type: Number,
+    required: true,
+    default: 0.00
   },
   discountPrice: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: true,
-    field: 'discount_price'
+    type: Number,
+    default: null
   },
   taxRate: {
-    type: DataTypes.DECIMAL(5, 2),
-    allowNull: false,
-    defaultValue: 0.00,
-    field: 'tax_rate'
+    type: Number,
+    required: true,
+    default: 0.00
   },
   stockQuantity: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-    field: 'stock_quantity'
+    type: Number,
+    required: true,
+    default: 0
   },
   weight: {
-    type: DataTypes.DECIMAL(8, 2),
-    allowNull: true
+    type: Number,
+    default: null
   },
   dimensions: {
-    type: DataTypes.STRING,
-    allowNull: true // format: "10x20x15 cm"
+    type: String
   },
   status: {
-    type: DataTypes.ENUM('draft', 'published'),
-    allowNull: false,
-    defaultValue: 'draft'
+    type: String,
+    enum: ['draft', 'published'],
+    default: 'draft'
   },
   isFeatured: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false,
-    field: 'is_featured'
+    type: Boolean,
+    default: false
   },
   thumbnail: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String
   },
   variants: {
-    type: DataTypes.JSON,
-    allowNull: true // structure: [{ size: 'M', color: 'Black', stock: 10, price: 99.00, sku: 'TSH-M-BLK' }]
+    type: mongoose.Schema.Types.Mixed
   },
   seoTitle: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'seo_title'
+    type: String
   },
   seoDescription: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'seo_description'
+    type: String
   },
   countdownEvergreen: {
-    type: DataTypes.BOOLEAN,
-    allowNull: true,
-    defaultValue: false,
-    field: 'countdown_evergreen'
+    type: Boolean,
+    default: false
   },
   restartCountdownAfter: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'restart_countdown_after'
+    type: Number
   },
   countdownTimerProfile: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'countdown_timer_profile'
+    type: String
   },
   enableProgressBar: {
-    type: DataTypes.BOOLEAN,
-    allowNull: true,
-    defaultValue: false,
-    field: 'enable_progress_bar'
+    type: Boolean,
+    default: false
   },
   whenAchievingGoal: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'when_achieving_goal'
+    type: String
   },
   goal: {
-    type: DataTypes.INTEGER,
-    allowNull: true
+    type: Number
   },
   initialQuantity: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'initial_quantity'
+    type: Number
   },
   taxStatus: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'tax_status'
+    type: String
   },
   taxClass: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'tax_class'
+    type: String
   },
   hsnSacCode: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'hsn_sac_code'
+    type: String
   },
   whatsAppNumber: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'whatsapp_number'
+    type: String
   },
   callToAction: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'call_to_action'
+    type: String
   },
   preFilledMessage: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'pre_filled_message'
+    type: String
   },
   displaySettings: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'display_settings'
+    type: String
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = Product;
+// Virtual for images
+ProductSchema.virtual('images', {
+  ref: 'ProductImage',
+  localField: '_id',
+  foreignField: 'product'
+});
+
+// Virtual for reviews
+ProductSchema.virtual('reviews', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'product'
+});
+
+module.exports = mongoose.model('Product', ProductSchema);

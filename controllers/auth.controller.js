@@ -21,7 +21,7 @@ const login = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Please provide email and password' });
     }
 
-    const admin = await Admin.findOne({ where: { email } });
+    const admin = await Admin.findOne({ email });
 
     if (!admin) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
@@ -80,10 +80,10 @@ const getProfile = async (req, res, next) => {
 // @access  Private
 const updateProfile = async (req, res, next) => {
   try {
-    const admin = await Admin.findByPk(req.admin.id);
+    const admin = await Admin.findById(req.admin.id);
 
     if (!admin) {
-      return res.status(444).json({ success: false, error: 'Admin not found' });
+      return res.status(404).json({ success: false, error: 'Admin not found' });
     }
 
     admin.name = req.body.name || admin.name;
@@ -122,10 +122,7 @@ const updateProfile = async (req, res, next) => {
 // @access  Private (Superadmin only)
 const getAdmins = async (req, res, next) => {
   try {
-    const admins = await Admin.findAll({
-      attributes: { exclude: ['password'] },
-      order: [['id', 'ASC']]
-    });
+    const admins = await Admin.find().select('-password').sort({ createdAt: 1 });
 
     res.json({
       success: true,
@@ -143,7 +140,7 @@ const createAdmin = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
 
-    const existingAdmin = await Admin.findOne({ where: { email } });
+    const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
       return res.status(400).json({ success: false, error: 'Admin with this email already exists' });
     }
@@ -186,11 +183,11 @@ const toggleAdminStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (parseInt(id) === req.admin.id) {
+    if (id === req.admin.id.toString()) {
       return res.status(400).json({ success: false, error: 'You cannot deactivate your own account' });
     }
 
-    const admin = await Admin.findByPk(id);
+    const admin = await Admin.findById(id);
     if (!admin) {
       return res.status(404).json({ success: false, error: 'Admin account not found' });
     }

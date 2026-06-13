@@ -17,9 +17,7 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtsecretkeyshouldbecomplex39284');
 
       // Get admin from token, exclude password
-      req.admin = await Admin.findByPk(decoded.id, {
-        attributes: { exclude: ['password'] }
-      });
+      req.admin = await Admin.findById(decoded.id).select('-password');
 
       if (!req.admin) {
         return res.status(401).json({

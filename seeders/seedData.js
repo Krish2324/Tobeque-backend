@@ -16,16 +16,30 @@ const {
   InventoryLog,
   AdminLog
 } = require('../models');
-const bcrypt = require('bcryptjs');
+const { testConnection } = require('../config/db');
 
 const runSeeder = async () => {
   try {
-    console.log('Starting Database Sync...');
-    // Disable SQLite foreign key constraint checks for safe dropping
-    await sequelize.query('PRAGMA foreign_keys = OFF;');
-    await sequelize.sync({ force: true });
-    await sequelize.query('PRAGMA foreign_keys = ON;');
-    console.log('Database Synced Successfully! Seeding dummy data...');
+    console.log('Connecting and clearing existing MongoDB collections...');
+    
+    // Clear all collections
+    await Admin.deleteMany({});
+    await User.deleteMany({});
+    await Category.deleteMany({});
+    await Brand.deleteMany({});
+    await Product.deleteMany({});
+    await ProductImage.deleteMany({});
+    await Coupon.deleteMany({});
+    await Order.deleteMany({});
+    await OrderItem.deleteMany({});
+    await Payment.deleteMany({});
+    await Review.deleteMany({});
+    await Banner.deleteMany({});
+    await Setting.deleteMany({});
+    await InventoryLog.deleteMany({});
+    await AdminLog.deleteMany({});
+    
+    console.log('Collections cleared. Seeding dummy data...');
 
     // 1. Seed Admins
     console.log('Seeding Admins...');
@@ -37,7 +51,7 @@ const runSeeder = async () => {
       role: 'superadmin',
       status: true
     });
-
+    
     await Admin.create({
       name: 'Jane Manager',
       email: 'manager@tobeque.com',
@@ -49,7 +63,7 @@ const runSeeder = async () => {
     // 2. Seed Users (Customers)
     console.log('Seeding Users...');
     const userPassword = 'customer123';
-    const customers = await User.bulkCreate([
+    const customers = await User.create([
       { firstName: 'John', lastName: 'Doe', email: 'john@gmail.com', password: userPassword, phone: '+1234567890', status: 'active' },
       { firstName: 'Jane', lastName: 'Smith', email: 'jane@gmail.com', password: userPassword, phone: '+1987654321', status: 'active' },
       { firstName: 'Robert', lastName: 'Johnson', email: 'robert@gmail.com', password: userPassword, phone: '+1122334455', status: 'active' },
@@ -107,7 +121,7 @@ const runSeeder = async () => {
     const apple = await Brand.create({ name: 'Apple', slug: 'apple', description: 'Innovative high-end consumer electronics' });
     const samsung = await Brand.create({ name: 'Samsung', slug: 'samsung', description: 'Leading technology and screen manufacturers' });
     const nike = await Brand.create({ name: 'Nike', slug: 'nike', description: 'Premium sports and athletic items' });
-    const sony = await Brand.create({ name: 'Sony', slug: 'sony', description: 'Industry standards in quality' });
+    const sony = await Brand.create({ name: 'Sony', slug: 'sony', description: 'Industry standards in audio and gaming tech' });
 
     // 5. Seed Products
     console.log('Seeding Products...');
@@ -118,8 +132,8 @@ const runSeeder = async () => {
       barcode: '190199123456',
       shortDescription: 'Flagship Apple smartphone with Titanium design.',
       fullDescription: 'The iPhone 15 Pro Max features a strong and lightweight aerospace-grade titanium design. Powered by the groundbreaking A17 Pro chip for next-level gaming and computational photography.',
-      categoryId: smartPhones.id,
-      brandId: apple.id,
+      category: smartPhones.id,
+      brand: apple.id,
       price: 1199.00,
       discountPrice: 1149.00,
       taxRate: 8.50,
@@ -145,8 +159,8 @@ const runSeeder = async () => {
       barcode: '880609123456',
       shortDescription: 'Premium Samsung smartphone with AI features.',
       fullDescription: 'Galaxy S24 Ultra comes with a durable titanium shell, integrated S Pen stylus, and the Snapdragon 8 Gen 3 processor for top-tier artificial intelligence and gaming enhancements.',
-      categoryId: smartPhones.id,
-      brandId: samsung.id,
+      category: smartPhones.id,
+      brand: samsung.id,
       price: 1299.00,
       discountPrice: 1249.00,
       taxRate: 8.50,
@@ -169,8 +183,8 @@ const runSeeder = async () => {
       barcode: '454873613098',
       shortDescription: 'Industry leading active noise cancelling headphones.',
       fullDescription: 'The WH-1000XM5 headphones rewrite the rules for distraction-free listening. Dynamic NC optimizer adjusts automatically, powered by dual sound processors and high-quality microphones.',
-      categoryId: electronics.id,
-      brandId: sony.id,
+      category: electronics.id,
+      brand: sony.id,
       price: 399.00,
       discountPrice: 349.00,
       taxRate: 5.00,
@@ -189,8 +203,8 @@ const runSeeder = async () => {
       barcode: '195243123456',
       shortDescription: 'Comfortable cross-training gym sneakers.',
       fullDescription: 'Finish your last rep with power and back it up with a roar in the Nike Air Max Alpha Trainer. Max Air cushioning offers comfortable stability for lifting and cardio training.',
-      categoryId: mensFashion.id,
-      brandId: nike.id,
+      category: mensFashion.id,
+      brand: nike.id,
       price: 85.00,
       discountPrice: 79.99,
       taxRate: 0.00,
@@ -213,8 +227,8 @@ const runSeeder = async () => {
       barcode: '190199789012',
       shortDescription: 'Ultimate developer laptop with M3 Max silicon.',
       fullDescription: 'Designed for professionals. Built with the Apple M3 Max chip, featuring up to a 16-core CPU, up to a 40-core GPU, and up to 128GB Unified Memory for high performance compile speeds.',
-      categoryId: laptops.id,
-      brandId: apple.id,
+      category: laptops.id,
+      brand: apple.id,
       price: 3499.00,
       discountPrice: null,
       taxRate: 8.50,
@@ -227,22 +241,21 @@ const runSeeder = async () => {
     });
 
     // Seed Product Images (Gallery)
-    await ProductImage.bulkCreate([
-      { productId: p1.id, imageUrl: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=500' },
-      { productId: p1.id, imageUrl: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=500' },
-      { productId: p2.id, imageUrl: 'https://images.unsplash.com/photo-1610945415295-d9bff067e59c?w=500' }
+    await ProductImage.create([
+      { product: p1.id, imageUrl: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=500' },
+      { product: p1.id, imageUrl: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=500' },
+      { product: p2.id, imageUrl: 'https://images.unsplash.com/photo-1610945415295-d9bff067e59c?w=500' }
     ]);
 
     // 6. Seed Coupons
     console.log('Seeding Coupons...');
-    await Coupon.bulkCreate([
+    await Coupon.create([
       { code: 'WELCOME10', type: 'percentage', discountValue: 10.00, minOrderAmount: 50.00, usageLimit: 1000, usedCount: 145, startDate: '2026-01-01', expiryDate: '2026-12-31', status: true },
       { code: 'FLAT50', type: 'flat', discountValue: 50.00, minOrderAmount: 300.00, usageLimit: 200, usedCount: 42, startDate: '2026-01-01', expiryDate: '2026-08-31', status: true },
       { code: 'SUMMER20', type: 'percentage', discountValue: 20.00, minOrderAmount: 100.00, usageLimit: 500, usedCount: 0, startDate: '2026-06-01', expiryDate: '2026-09-30', status: true }
     ]);
 
     // 7. Seed Orders with rich temporal distribution (over the last 6 months!)
-    // Let's create realistic date ranges for our graphs.
     console.log('Seeding Orders...');
     const now = new Date();
     const makeDate = (monthsAgo, dayOffset = 5) => {
@@ -252,33 +265,32 @@ const runSeeder = async () => {
       return d;
     };
 
-    // We will build several high-value orders across consecutive months.
     const ordersData = [
       // 5 Months Ago (Dec)
-      { userId: customers[0].id, orderNumber: 'ORD-1001', subtotal: 1199.00, taxAmount: 101.92, shippingCost: 15.00, discountAmount: 119.90, totalAmount: 1196.02, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(5, 12) },
-      { userId: customers[1].id, orderNumber: 'ORD-1002', subtotal: 399.00, taxAmount: 19.95, shippingCost: 10.00, discountAmount: 0.00, totalAmount: 428.95, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'paypal', shippingStatus: 'delivered', createdAt: makeDate(5, 4) },
-
+      { user: customers[0].id, orderNumber: 'ORD-1001', subtotal: 1199.00, taxAmount: 101.92, shippingCost: 15.00, discountAmount: 119.90, totalAmount: 1196.02, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(5, 12) },
+      { user: customers[1].id, orderNumber: 'ORD-1002', subtotal: 399.00, taxAmount: 19.95, shippingCost: 10.00, discountAmount: 0.00, totalAmount: 428.95, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'paypal', shippingStatus: 'delivered', createdAt: makeDate(5, 4) },
+      
       // 4 Months Ago (Jan)
-      { userId: customers[2].id, orderNumber: 'ORD-1003', subtotal: 85.00, taxAmount: 0.00, shippingCost: 5.00, discountAmount: 8.50, totalAmount: 81.50, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'cod', shippingStatus: 'delivered', createdAt: makeDate(4, 25) },
-      { userId: customers[3].id, orderNumber: 'ORD-1004', subtotal: 1299.00, taxAmount: 110.42, shippingCost: 20.00, discountAmount: 50.00, totalAmount: 1379.42, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(4, 10) },
+      { user: customers[2].id, orderNumber: 'ORD-1003', subtotal: 85.00, taxAmount: 0.00, shippingCost: 5.00, discountAmount: 8.50, totalAmount: 81.50, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'cod', shippingStatus: 'delivered', createdAt: makeDate(4, 25) },
+      { user: customers[3].id, orderNumber: 'ORD-1004', subtotal: 1299.00, taxAmount: 110.42, shippingCost: 20.00, discountAmount: 50.00, totalAmount: 1379.42, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(4, 10) },
 
       // 3 Months Ago (Feb)
-      { userId: customers[0].id, orderNumber: 'ORD-1005', subtotal: 399.00, taxAmount: 19.95, shippingCost: 10.00, discountAmount: 39.90, totalAmount: 389.05, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(3, 20) },
-      { userId: customers[1].id, orderNumber: 'ORD-1006', subtotal: 1199.00, taxAmount: 101.92, shippingCost: 15.00, discountAmount: 0.00, totalAmount: 1315.92, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'paypal', shippingStatus: 'delivered', createdAt: makeDate(3, 8) },
+      { user: customers[0].id, orderNumber: 'ORD-1005', subtotal: 399.00, taxAmount: 19.95, shippingCost: 10.00, discountAmount: 39.90, totalAmount: 389.05, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(3, 20) },
+      { user: customers[1].id, orderNumber: 'ORD-1006', subtotal: 1199.00, taxAmount: 101.92, shippingCost: 15.00, discountAmount: 0.00, totalAmount: 1315.92, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'paypal', shippingStatus: 'delivered', createdAt: makeDate(3, 8) },
 
       // 2 Months Ago (Mar)
-      { userId: customers[2].id, orderNumber: 'ORD-1007', subtotal: 2398.00, taxAmount: 203.83, shippingCost: 30.00, discountAmount: 50.00, totalAmount: 2581.83, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(2, 14) },
-      { userId: customers[3].id, orderNumber: 'ORD-1008', subtotal: 85.00, taxAmount: 0.00, shippingCost: 5.00, discountAmount: 0.00, totalAmount: 90.00, orderStatus: 'cancelled', paymentStatus: 'pending', paymentMethod: 'cod', shippingStatus: 'pending', createdAt: makeDate(2, 2) },
+      { user: customers[2].id, orderNumber: 'ORD-1007', subtotal: 2398.00, taxAmount: 203.83, shippingCost: 30.00, discountAmount: 50.00, totalAmount: 2581.83, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(2, 14) },
+      { user: customers[3].id, orderNumber: 'ORD-1008', subtotal: 85.00, taxAmount: 0.00, shippingCost: 5.00, discountAmount: 0.00, totalAmount: 90.00, orderStatus: 'cancelled', paymentStatus: 'pending', paymentMethod: 'cod', shippingStatus: 'pending', createdAt: makeDate(2, 2) },
 
       // 1 Month Ago (Apr)
-      { userId: customers[0].id, orderNumber: 'ORD-1009', subtotal: 1299.00, taxAmount: 110.42, shippingCost: 20.00, discountAmount: 129.90, totalAmount: 1299.52, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(1, 28) },
-      { userId: customers[1].id, orderNumber: 'ORD-1010', subtotal: 798.00, taxAmount: 39.90, shippingCost: 15.00, discountAmount: 50.00, totalAmount: 802.90, orderStatus: 'returned', paymentStatus: 'refunded', paymentMethod: 'paypal', shippingStatus: 'delivered', createdAt: makeDate(1, 15) },
-      { userId: customers[2].id, orderNumber: 'ORD-1011', subtotal: 170.00, taxAmount: 0.00, shippingCost: 10.00, discountAmount: 17.00, totalAmount: 163.00, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'cod', shippingStatus: 'delivered', createdAt: makeDate(1, 5) },
+      { user: customers[0].id, orderNumber: 'ORD-1009', subtotal: 1299.00, taxAmount: 110.42, shippingCost: 20.00, discountAmount: 129.90, totalAmount: 1299.52, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'delivered', createdAt: makeDate(1, 28) },
+      { user: customers[1].id, orderNumber: 'ORD-1010', subtotal: 798.00, taxAmount: 39.90, shippingCost: 15.00, discountAmount: 50.00, totalAmount: 802.90, orderStatus: 'returned', paymentStatus: 'refunded', paymentMethod: 'paypal', shippingStatus: 'delivered', createdAt: makeDate(1, 15) },
+      { user: customers[2].id, orderNumber: 'ORD-1011', subtotal: 170.00, taxAmount: 0.00, shippingCost: 10.00, discountAmount: 17.00, totalAmount: 163.00, orderStatus: 'delivered', paymentStatus: 'paid', paymentMethod: 'cod', shippingStatus: 'delivered', createdAt: makeDate(1, 5) },
 
       // Current Month (May)
-      { userId: customers[0].id, orderNumber: 'ORD-1012', subtotal: 1199.00, taxAmount: 101.92, shippingCost: 15.00, discountAmount: 50.00, totalAmount: 1265.92, orderStatus: 'processing', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'pending', shippingAddress: '123 Main St, New York NY 10001', createdAt: makeDate(0, 4) },
-      { userId: customers[1].id, orderNumber: 'ORD-1013', subtotal: 85.00, taxAmount: 0.00, shippingCost: 5.00, discountAmount: 0.00, totalAmount: 90.00, orderStatus: 'pending', paymentStatus: 'pending', paymentMethod: 'cod', shippingStatus: 'pending', shippingAddress: '456 Elm St, Los Angeles CA 90001', createdAt: makeDate(0, 2) },
-      { userId: customers[3].id, orderNumber: 'ORD-1014', subtotal: 1299.00, taxAmount: 110.42, shippingCost: 20.00, discountAmount: 0.00, totalAmount: 1429.42, orderStatus: 'shipped', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'shipped', trackingNumber: 'TRK928139281', shippingAddress: '789 Oak Ave, Chicago IL 60601', createdAt: makeDate(0, 1) }
+      { user: customers[0].id, orderNumber: 'ORD-1012', subtotal: 1199.00, taxAmount: 101.92, shippingCost: 15.00, discountAmount: 50.00, totalAmount: 1265.92, orderStatus: 'processing', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'pending', shippingAddress: '123 Main St, New York NY 10001', createdAt: makeDate(0, 4) },
+      { user: customers[1].id, orderNumber: 'ORD-1013', subtotal: 85.00, taxAmount: 0.00, shippingCost: 5.00, discountAmount: 0.00, totalAmount: 90.00, orderStatus: 'pending', paymentStatus: 'pending', paymentMethod: 'cod', shippingStatus: 'pending', shippingAddress: '456 Elm St, Los Angeles CA 90001', createdAt: makeDate(0, 2) },
+      { user: customers[3].id, orderNumber: 'ORD-1014', subtotal: 1299.00, taxAmount: 110.42, shippingCost: 20.00, discountAmount: 0.00, totalAmount: 1429.42, orderStatus: 'shipped', paymentStatus: 'paid', paymentMethod: 'stripe', shippingStatus: 'shipped', trackingNumber: 'TRK928139281', shippingAddress: '789 Oak Ave, Chicago IL 60601', createdAt: makeDate(0, 1) }
     ];
 
     for (let o of ordersData) {
@@ -290,25 +302,25 @@ const runSeeder = async () => {
 
       // Add order items based on order cost
       if (o.subtotal === 1199.00) {
-        await OrderItem.create({ orderId: order.id, productId: p1.id, productName: p1.name, sku: p1.sku, price: 1199.00, quantity: 1, variantDetails: { color: 'Natural Titanium', size: '256GB' } });
+        await OrderItem.create({ order: order.id, product: p1.id, productName: p1.name, sku: p1.sku, price: 1199.00, quantity: 1, variantDetails: { color: 'Natural Titanium', size: '256GB' } });
       } else if (o.subtotal === 399.00) {
-        await OrderItem.create({ orderId: order.id, productId: p3.id, productName: p3.name, sku: p3.sku, price: 399.00, quantity: 1 });
+        await OrderItem.create({ order: order.id, product: p3.id, productName: p3.name, sku: p3.sku, price: 399.00, quantity: 1 });
       } else if (o.subtotal === 85.00) {
-        await OrderItem.create({ orderId: order.id, productId: p4.id, productName: p4.name, sku: p4.sku, price: 85.00, quantity: 1, variantDetails: { color: 'Red/Black', size: '10' } });
+        await OrderItem.create({ order: order.id, product: p4.id, productName: p4.name, sku: p4.sku, price: 85.00, quantity: 1, variantDetails: { color: 'Red/Black', size: '10' } });
       } else if (o.subtotal === 1299.00) {
-        await OrderItem.create({ orderId: order.id, productId: p2.id, productName: p2.name, sku: p2.sku, price: 1299.00, quantity: 1, variantDetails: { color: 'Titanium Gray', size: '256GB' } });
+        await OrderItem.create({ order: order.id, product: p2.id, productName: p2.name, sku: p2.sku, price: 1299.00, quantity: 1, variantDetails: { color: 'Titanium Gray', size: '256GB' } });
       } else if (o.subtotal === 2398.00) {
-        await OrderItem.create({ orderId: order.id, productId: p1.id, productName: p1.name, sku: p1.sku, price: 1199.00, quantity: 2 });
+        await OrderItem.create({ order: order.id, product: p1.id, productName: p1.name, sku: p1.sku, price: 1199.00, quantity: 2 });
       } else if (o.subtotal === 798.00) {
-        await OrderItem.create({ orderId: order.id, productId: p3.id, productName: p3.name, sku: p3.sku, price: 399.00, quantity: 2 });
+        await OrderItem.create({ order: order.id, product: p3.id, productName: p3.name, sku: p3.sku, price: 399.00, quantity: 2 });
       } else if (o.subtotal === 170.00) {
-        await OrderItem.create({ orderId: order.id, productId: p4.id, productName: p4.name, sku: p4.sku, price: 85.00, quantity: 2 });
+        await OrderItem.create({ order: order.id, product: p4.id, productName: p4.name, sku: p4.sku, price: 85.00, quantity: 2 });
       }
 
       // Add payment transaction records
       if (o.paymentStatus !== 'pending') {
         await Payment.create({
-          orderId: order.id,
+          order: order.id,
           transactionId: `TXN-${order.orderNumber}-${Math.floor(Math.random() * 89999 + 10000)}`,
           gateway: o.paymentMethod,
           amount: o.totalAmount,
@@ -320,16 +332,16 @@ const runSeeder = async () => {
 
     // 8. Seed Reviews
     console.log('Seeding Reviews...');
-    await Review.bulkCreate([
-      { userId: customers[0].id, productId: p1.id, rating: 5, comment: 'Phenomenal device! Titanium is super light.', isApproved: true },
-      { userId: customers[1].id, productId: p1.id, rating: 4, comment: 'Great phone, but expensive.', isApproved: true },
-      { userId: customers[2].id, productId: p3.id, rating: 5, comment: 'Noise cancellation is like entering a vacuum. Highly recommend!', isApproved: true },
-      { userId: customers[3].id, productId: p2.id, rating: 3, comment: 'Battery is excellent, but UI is slightly laggy.', isApproved: false }
+    await Review.create([
+      { user: customers[0].id, product: p1.id, rating: 5, comment: 'Phenomenal device! Titanium is super light.', isApproved: true },
+      { user: customers[1].id, product: p1.id, rating: 4, comment: 'Great phone, but expensive.', isApproved: true },
+      { user: customers[2].id, product: p3.id, rating: 5, comment: 'Noise cancellation is like entering a vacuum. Highly recommend!', isApproved: true },
+      { user: customers[3].id, product: p2.id, rating: 3, comment: 'Battery is excellent, but UI is slightly laggy.', isApproved: false }
     ]);
 
     // 9. Seed Banners
     console.log('Seeding Banners...');
-    await Banner.bulkCreate([
+    await Banner.create([
       { title: 'The Ultimate Smartphones', subtitle: 'Get up to 20% off flagship devices', imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1200', linkUrl: '/products?category=smartphones', position: 'home_slider', sortOrder: 1, status: true },
       { title: 'Premium Activewear', subtitle: 'Step up your fitness goals', imageUrl: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200', linkUrl: '/products?category=mens-fashion', position: 'home_slider', sortOrder: 2, status: true },
       { title: 'Summer Clearance Sale', subtitle: 'Flat discount on luxury home decors', imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800', linkUrl: '/coupons', position: 'promo_banner', sortOrder: 1, status: true }
@@ -337,7 +349,7 @@ const runSeeder = async () => {
 
     // 10. Seed Settings
     console.log('Seeding System Settings...');
-    await Setting.bulkCreate([
+    await Setting.create([
       { key: 'site_name', value: 'Tobeque Admin Core' },
       { key: 'site_logo', value: '' },
       { key: 'support_email', value: 'support@tobeque.com' },
@@ -349,7 +361,7 @@ const runSeeder = async () => {
 
     // 11. Seed Logs
     console.log('Seeding Initial Logs...');
-    await InventoryLog.bulkCreate([
+    await InventoryLog.create([
       { productId: p1.id, stockChanged: 50, actionType: 'restock', reference: 'Initial stock load', adminId: adminUser.id },
       { productId: p1.id, stockChanged: -5, actionType: 'sale', reference: 'Sales deductor' },
       { productId: p2.id, stockChanged: 10, actionType: 'restock', reference: 'Initial stock load', adminId: adminUser.id },
@@ -371,4 +383,14 @@ const runSeeder = async () => {
   }
 };
 
-runSeeder();
+const start = async () => {
+  try {
+    await testConnection();
+    await runSeeder();
+  } catch (err) {
+    console.error('Seeder initialization error:', err);
+    process.exit(1);
+  }
+};
+
+start();

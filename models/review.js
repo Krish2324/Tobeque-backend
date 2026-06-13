@@ -1,40 +1,47 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const Review = sequelize.define('Review', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
+const ReviewSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'user_id'
-  },
-  productId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'product_id'
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
   },
   rating: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    validate: {
-      min: 1,
-      max: 5
-    }
+    type: Number,
+    required: true,
+    min: 1,
+    max: 5
   },
   comment: {
-    type: DataTypes.TEXT,
-    allowNull: true
+    type: String
   },
   isApproved: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false,
-    field: 'is_approved'
+    type: Boolean,
+    default: false
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = Review;
+module.exports = mongoose.model('Review', ReviewSchema);

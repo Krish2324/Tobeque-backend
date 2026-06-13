@@ -1,46 +1,50 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const Banner = sequelize.define('Banner', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const BannerSchema = new mongoose.Schema({
   title: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String
   },
   subtitle: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String
   },
   imageUrl: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: 'image_url'
+    type: String,
+    required: true
   },
   linkUrl: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'link_url'
+    type: String
   },
   position: {
-    type: DataTypes.ENUM('home_slider', 'promo_banner', 'mobile_banner'),
-    allowNull: false,
-    defaultValue: 'home_slider'
+    type: String,
+    enum: ['home_slider', 'promo_banner', 'mobile_banner'],
+    default: 'home_slider'
   },
   sortOrder: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-    field: 'sort_order'
+    type: Number,
+    default: 0
   },
   status: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: true
+    type: Boolean,
+    default: true
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = Banner;
+module.exports = mongoose.model('Banner', BannerSchema);

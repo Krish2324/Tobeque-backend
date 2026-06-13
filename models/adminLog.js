@@ -1,38 +1,42 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const AdminLog = sequelize.define('AdminLog', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const AdminLogSchema = new mongoose.Schema({
   adminId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'admin_id'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    required: true
   },
   action: {
-    type: DataTypes.STRING,
-    allowNull: false // e.g. "Created Product: Super Widget"
+    type: String,
+    required: true
   },
   entityType: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'entity_type' // e.g. "product", "order", "coupon"
+    type: String
   },
   entityId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'entity_id'
+    type: String
   },
   ipAddress: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'ip_address'
+    type: String
   }
 }, {
-  tableName: 'admin_logs'
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  }
 });
 
-module.exports = AdminLog;
+module.exports = mongoose.model('AdminLog', AdminLogSchema);

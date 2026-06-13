@@ -5,7 +5,7 @@ const { Banner, AdminLog } = require('../models');
 // @access  Private
 const getBanners = async (req, res, next) => {
   try {
-    const banners = await Banner.findAll({ order: [['sortOrder', 'ASC']] });
+    const banners = await Banner.find().sort({ sortOrder: 1 });
     res.json({
       success: true,
       banners
@@ -61,7 +61,7 @@ const createBanner = async (req, res, next) => {
 // @access  Private
 const updateBanner = async (req, res, next) => {
   try {
-    const banner = await Banner.findByPk(req.params.id);
+    const banner = await Banner.findById(req.params.id);
 
     if (!banner) {
       return res.status(404).json({ success: false, error: 'Banner not found' });
@@ -104,7 +104,7 @@ const updateBanner = async (req, res, next) => {
 // @access  Private
 const deleteBanner = async (req, res, next) => {
   try {
-    const banner = await Banner.findByPk(req.params.id);
+    const banner = await Banner.findById(req.params.id);
 
     if (!banner) {
       return res.status(404).json({ success: false, error: 'Banner not found' });
@@ -113,7 +113,7 @@ const deleteBanner = async (req, res, next) => {
     const bannerTitle = banner.title || 'Untitled';
     const bannerId = banner.id;
 
-    await banner.destroy();
+    await banner.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,

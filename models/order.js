@@ -1,105 +1,109 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const Order = sequelize.define('Order', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'user_id'
+const OrderSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   orderNumber: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    field: 'order_number'
+    type: String,
+    required: true,
+    unique: true
   },
   subtotal: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.00
+    type: Number,
+    required: true,
+    default: 0.00
   },
   taxAmount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.00,
-    field: 'tax_amount'
+    type: Number,
+    required: true,
+    default: 0.00
   },
   shippingCost: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.00,
-    field: 'shipping_cost'
+    type: Number,
+    required: true,
+    default: 0.00
   },
   discountAmount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.00,
-    field: 'discount_amount'
-  },
-  couponCode: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'coupon_code'
+    type: Number,
+    required: true,
+    default: 0.00
   },
   totalAmount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-    defaultValue: 0.00,
-    field: 'total_amount'
+    type: Number,
+    required: true,
+    default: 0.00
   },
   orderStatus: {
-    type: DataTypes.ENUM('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'),
-    allowNull: false,
-    defaultValue: 'pending',
-    field: 'order_status'
+    type: String,
+    enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'],
+    default: 'pending'
   },
   paymentStatus: {
-    type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
-    allowNull: false,
-    defaultValue: 'pending',
-    field: 'payment_status'
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending'
   },
   paymentMethod: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'cod',
-    field: 'payment_method' // e.g. "stripe", "paypal", "cod"
+    type: String,
+    required: true,
+    default: 'cod'
   },
   shippingStatus: {
-    type: DataTypes.ENUM('pending', 'shipped', 'out_for_delivery', 'delivered'),
-    allowNull: false,
-    defaultValue: 'pending',
-    field: 'shipping_status'
+    type: String,
+    enum: ['pending', 'shipped', 'out_for_delivery', 'delivered'],
+    default: 'pending'
   },
   shippingMethod: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'shipping_method'
+    type: String
   },
   shippingAddress: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-    field: 'shipping_address'
+    type: String,
+    required: true
   },
   billingAddress: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'billing_address'
+    type: String
   },
   trackingNumber: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'tracking_number'
+    type: String
   },
   notes: {
-    type: DataTypes.TEXT,
-    allowNull: true
+    type: String
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = Order;
+// Virtual for items
+OrderSchema.virtual('items', {
+  ref: 'OrderItem',
+  localField: '_id',
+  foreignField: 'order'
+});
+
+// Virtual for payments
+OrderSchema.virtual('payments', {
+  ref: 'Payment',
+  localField: '_id',
+  foreignField: 'order'
+});
+
+module.exports = mongoose.model('Order', OrderSchema);

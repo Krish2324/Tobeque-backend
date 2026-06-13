@@ -1,5 +1,4 @@
 const { Order, OrderItem, User, Product, Payment, InventoryLog, AdminLog } = require('../models');
-const { Op } = require('sequelize');
 
 // @desc    Get List of Orders
 // @route   GET /api/orders
@@ -29,26 +28,19 @@ const getOrders = async (req, res, next) => {
     }
 
     if (search) {
-      where[Op.or] = [
-        { orderNumber: { [Op.like]: `%${search}%` } },
-        { trackingNumber: { [Op.like]: `%${search}%` } }
+      const searchRegex = new RegExp(search, 'i');
+      where.$or = [
+        { orderNumber: searchRegex },
+        { trackingNumber: searchRegex }
       ];
     }
 
-    const { count, rows } = await Order.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [[sortBy, sortDir.toUpperCase()]],
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        }
-      ],
-      distinct: true
-    });
+    const count = await Order.countDocuments(where);
+    const rows = await Order.find(where)
+      .limit(parseInt(limit))
+      .skip(parseInt(offset))
+      .sort({ [sortBy]: sortDir.toUpperCase() === 'DESC' ? -1 : 1 })
+      .populate('user', 'firstName lastName email');
 
     res.json({
       success: true,
@@ -72,31 +64,21 @@ const getOrders = async (req, res, next) => {
 // @access  Private
 const getOrderById = async (req, res, next) => {
   try {
-    const order = await Order.findByPk(req.params.id, {
-      include: [
-        { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
-        { model: OrderItem, as: 'items', include: [{ model: Product, as: 'product', attributes: ['thumbnail'] }] },
-        { model: Payment, as: 'payments' }
-      ]
-    });
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'firstName lastName email phone')
+      .populate({
+        path: 'items',
+        populate: { path: 'product', select: 'thumbnail' }
+      })
+      .populate('payments');
 
     if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    let orderData = order.toJSON();
-    try {
-      if (typeof orderData.shippingAddress === 'string') {
-        orderData.shippingAddress = JSON.parse(orderData.shippingAddress);
-      }
-      if (typeof orderData.billingAddress === 'string') {
-        orderData.billingAddress = JSON.parse(orderData.billingAddress);
-      }
-    } catch(e) {}
-
     res.json({
       success: true,
-      order: orderData
+      order
     });
   } catch (error) {
     next(error);
@@ -109,9 +91,7 @@ const getOrderById = async (req, res, next) => {
 const updateOrderStatus = async (req, res, next) => {
   try {
     const { orderStatus, paymentStatus, shippingStatus, trackingNumber, notes } = req.body;
-    const order = await Order.findByPk(req.params.id, {
-      include: [{ model: OrderItem, as: 'items' }]
-    });
+    const order = await Order.findById(req.params.id).populate('items');
 
     if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });
@@ -127,10 +107,9 @@ const updateOrderStatus = async (req, res, next) => {
     if (isNowCancelledOrReturned && wasActiveStatus) {
       console.log(`Order ${order.orderNumber} status changed from ${oldOrderStatus} to ${newOrderStatus}. Restocking items...`);
       for (const item of order.items) {
-        if (item.productId) {
-          const product = await Product.findByPk(item.productId);
+        if (item.product) {
+          const product = await Product.findById(item.product);
           if (product) {
-            const priorQty = product.stockQuantity;
             product.stockQuantity += item.quantity;
             await product.save();
 
@@ -154,8 +133,8 @@ const updateOrderStatus = async (req, res, next) => {
     if (isNowActive && wasCancelledOrReturned) {
       console.log(`Order ${order.orderNumber} status reactivated from ${oldOrderStatus} to ${newOrderStatus}. Deducting items...`);
       for (const item of order.items) {
-        if (item.productId) {
-          const product = await Product.findByPk(item.productId);
+        if (item.product) {
+          const product = await Product.findById(item.product);
           if (product) {
             product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
             await product.save();
@@ -212,12 +191,9 @@ const updateOrderStatus = async (req, res, next) => {
 // @access  Private
 const getInvoiceDetails = async (req, res, next) => {
   try {
-    const order = await Order.findByPk(req.params.id, {
-      include: [
-        { model: User, as: 'user', attributes: ['firstName', 'lastName', 'email', 'phone'] },
-        { model: OrderItem, as: 'items' }
-      ]
-    });
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'firstName lastName email phone')
+      .populate('items');
 
     if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });

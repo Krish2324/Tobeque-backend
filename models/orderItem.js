@@ -1,47 +1,54 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const OrderItem = sequelize.define('OrderItem', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
+const OrderItemSchema = new mongoose.Schema({
+  order: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+    required: true
   },
-  orderId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'order_id'
-  },
-  productId: {
-    type: DataTypes.INTEGER,
-    allowNull: true, // Nullable in case product is deleted from catalog but we retain purchase records
-    field: 'product_id'
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    default: null
   },
   productName: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    field: 'product_name'
+    type: String,
+    required: true
   },
   sku: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: String,
+    required: true
   },
   price: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false
+    type: Number,
+    required: true
   },
   quantity: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1
+    type: Number,
+    required: true,
+    default: 1
   },
   variantDetails: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    field: 'variant_details' // structure: { size: 'M', color: 'Black' }
+    type: mongoose.Schema.Types.Mixed
   }
 }, {
-  tableName: 'order_items'
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  }
 });
 
-module.exports = OrderItem;
+module.exports = mongoose.model('OrderItem', OrderItemSchema);

@@ -1,5 +1,4 @@
-const { Product, ProductImage, Category, Brand, InventoryLog, AdminLog } = require('../models');
-const { Op } = require('sequelize');
+const { Product, ProductImage, Category, Brand, InventoryLog, AdminLog, Review } = require('../models');
 
 // Helper to slugify strings
 const slugify = (text) => {
@@ -35,21 +34,22 @@ const getProducts = async (req, res, next) => {
     const where = {};
 
     if (search) {
-      where[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { sku: { [Op.like]: `%${search}%` } },
-        { barcode: { [Op.like]: `%${search}%` } },
-        { shortDescription: { [Op.like]: `%${search}%` } },
-        { fullDescription: { [Op.like]: `%${search}%` } }
+      const searchRegex = new RegExp(search, 'i');
+      where.$or = [
+        { name: searchRegex },
+        { sku: searchRegex },
+        { barcode: searchRegex },
+        { shortDescription: searchRegex },
+        { fullDescription: searchRegex }
       ];
     }
 
     if (category) {
-      where.categoryId = category;
+      where.category = category;
     }
 
     if (brand) {
-      where.brandId = brand;
+      where.brand = brand;
     }
 
     if (status) {
@@ -60,18 +60,14 @@ const getProducts = async (req, res, next) => {
       where.isFeatured = featured === 'true';
     }
 
-    const { count, rows } = await Product.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [[sortBy, sortDir.toUpperCase()]],
-      include: [
-        { model: Category, as: 'category', attributes: ['id', 'name'] },
-        { model: Brand, as: 'brand', attributes: ['id', 'name'] },
-        { model: ProductImage, as: 'images', attributes: ['id', 'imageUrl'] }
-      ],
-      distinct: true // Avoids incorrect counting due to include relations
-    });
+    const count = await Product.countDocuments(where);
+    const rows = await Product.find(where)
+      .limit(parseInt(limit))
+      .skip(parseInt(offset))
+      .sort({ [sortBy]: sortDir.toUpperCase() === 'DESC' ? -1 : 1 })
+      .populate('category', 'id name')
+      .populate('brand', 'id name')
+      .populate('images', 'id imageUrl');
 
     res.json({
       success: true,
@@ -95,13 +91,10 @@ const getProducts = async (req, res, next) => {
 // @access  Private
 const getProductById = async (req, res, next) => {
   try {
-    const product = await Product.findByPk(req.params.id, {
-      include: [
-        { model: Category, as: 'category', attributes: ['id', 'name'] },
-        { model: Brand, as: 'brand', attributes: ['id', 'name'] },
-        { model: ProductImage, as: 'images', attributes: ['id', 'imageUrl'] }
-      ]
-    });
+    const product = await Product.findById(req.params.id)
+      .populate('category', 'id name')
+      .populate('brand', 'id name')
+      .populate('images', 'id imageUrl');
 
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found' });
@@ -157,7 +150,7 @@ const createProduct = async (req, res, next) => {
     } = req.body;
 
     // Check SKU unique
-    const skuExists = await Product.findOne({ where: { sku } });
+    const skuExists = await Product.findOne({ sku });
     if (skuExists) {
       return res.status(400).json({ success: false, error: `SKU '${sku}' already exists` });
     }
@@ -168,7 +161,6 @@ const createProduct = async (req, res, next) => {
     // Get thumbnail from uploaded files (Multer saves to req.file or req.files)
     let thumbnail = '';
     if (req.files && req.files.thumbnail) {
-      // Standard local path relative to site
       thumbnail = `/uploads/products/${req.files.thumbnail[0].filename}`;
     }
 
@@ -198,8 +190,8 @@ const createProduct = async (req, res, next) => {
       status: status || 'draft',
       isFeatured: isFeatured === 'true' || isFeatured === true,
       thumbnail,
-      categoryId: categoryId ? parseInt(categoryId) : null,
-      brandId: brandId ? parseInt(brandId) : null,
+      category: categoryId || null,
+      brand: brandId || null,
       variants: parsedVariants,
       seoTitle,
       seoDescription,
@@ -231,10 +223,10 @@ const createProduct = async (req, res, next) => {
     // Create additional product gallery images if uploaded
     if (req.files && req.files.images) {
       const imageRecords = req.files.images.map((img) => ({
-        productId: product.id,
+        product: product.id,
         imageUrl: `/uploads/products/${img.filename}`
       }));
-      await ProductImage.bulkCreate(imageRecords);
+      await ProductImage.insertMany(imageRecords);
     }
 
     // Save Admin action log
@@ -260,7 +252,7 @@ const createProduct = async (req, res, next) => {
 // @access  Private
 const updateProduct = async (req, res, next) => {
   try {
-    const product = await Product.findByPk(req.params.id);
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found' });
@@ -304,7 +296,7 @@ const updateProduct = async (req, res, next) => {
     } = req.body;
 
     if (sku && sku !== product.sku) {
-      const skuExists = await Product.findOne({ where: { sku } });
+      const skuExists = await Product.findOne({ sku });
       if (skuExists) {
         return res.status(400).json({ success: false, error: `SKU '${sku}' already exists` });
       }
@@ -327,8 +319,8 @@ const updateProduct = async (req, res, next) => {
     product.status = status !== undefined ? status : product.status;
     product.seoTitle = seoTitle !== undefined ? seoTitle : product.seoTitle;
     product.seoDescription = seoDescription !== undefined ? seoDescription : product.seoDescription;
-    product.categoryId = categoryId !== undefined ? (categoryId ? parseInt(categoryId) : null) : product.categoryId;
-    product.brandId = brandId !== undefined ? (brandId ? parseInt(brandId) : null) : product.brandId;
+    product.category = categoryId !== undefined ? (categoryId || null) : product.category;
+    product.brand = brandId !== undefined ? (brandId || null) : product.brand;
     
     product.countdownTimerProfile = countdownTimerProfile !== undefined ? countdownTimerProfile : product.countdownTimerProfile;
     product.whenAchievingGoal = whenAchievingGoal !== undefined ? whenAchievingGoal : product.whenAchievingGoal;
@@ -401,10 +393,10 @@ const updateProduct = async (req, res, next) => {
     // Create additional product gallery images if uploaded
     if (req.files && req.files.images) {
       const imageRecords = req.files.images.map((img) => ({
-        productId: product.id,
+        product: product.id,
         imageUrl: `/uploads/products/${img.filename}`
       }));
-      await ProductImage.bulkCreate(imageRecords);
+      await ProductImage.insertMany(imageRecords);
     }
 
     // Log Admin action
@@ -430,7 +422,7 @@ const updateProduct = async (req, res, next) => {
 // @access  Private
 const deleteProduct = async (req, res, next) => {
   try {
-    const product = await Product.findByPk(req.params.id);
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found' });
@@ -439,7 +431,12 @@ const deleteProduct = async (req, res, next) => {
     const prodName = product.name;
     const prodId = product.id;
 
-    await product.destroy(); // ProductImages cascade triggers automatically due to index associations
+    // Manually delete dependent records
+    await ProductImage.deleteMany({ product: prodId });
+    await InventoryLog.deleteMany({ productId: prodId });
+    await Review.deleteMany({ product: prodId });
+
+    await product.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,
@@ -466,17 +463,17 @@ const deleteProductImage = async (req, res, next) => {
     const { id, imageId } = req.params;
     
     // Ensure product exists
-    const product = await Product.findByPk(id);
+    const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
-    const image = await ProductImage.findOne({ where: { id: imageId, productId: id } });
+    const image = await ProductImage.findOne({ _id: imageId, product: id });
     if (!image) {
       return res.status(404).json({ success: false, error: 'Image not found' });
     }
 
-    await image.destroy();
+    await image.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,

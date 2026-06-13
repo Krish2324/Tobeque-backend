@@ -1,5 +1,4 @@
-const { Order, User, Product, OrderItem, AdminLog, sequelize } = require('../models');
-const { Op } = require('sequelize');
+const { Order, User, Product, OrderItem, AdminLog } = require('../models');
 
 // @desc    Get Central Admin Dashboard Stats
 // @route   GET /api/dashboard/stats
@@ -7,88 +6,85 @@ const { Op } = require('sequelize');
 const getDashboardStats = async (req, res, next) => {
   try {
     // 1. Calculate General Widgets Metrics
-    const totalOrdersCount = await Order.count();
+    const totalOrdersCount = await Order.countDocuments();
     
     // Sum of paid or active orders for total sales
-    const totalSalesSum = await Order.sum('totalAmount', {
-      where: {
-        paymentStatus: 'paid'
-      }
-    }) || 0.00;
+    const paidOrdersSum = await Order.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    ]);
+    const totalSalesSum = paidOrdersSum.length > 0 ? paidOrdersSum[0].total : 0.00;
 
-    const totalCustomersCount = await User.count({
-      where: { status: 'active' }
-    });
+    const totalCustomersCount = await User.countDocuments({ status: 'active' });
 
-    const totalProductsCount = await Product.count();
+    const totalProductsCount = await Product.countDocuments();
 
     // 2. Fetch Low Stock Alert Products (stock <= 10)
-    const lowStockAlerts = await Product.findAll({
-      where: {
-        stockQuantity: {
-          [Op.lte]: 10
-        }
-      },
-      attributes: ['id', 'name', 'sku', 'stockQuantity', 'price', 'thumbnail'],
-      limit: 10
-    });
+    const lowStockAlerts = await Product.find({ stockQuantity: { $lte: 10 } })
+      .select('id name sku stockQuantity price thumbnail')
+      .limit(10);
 
     // 3. Fetch Top Selling Products
-    // We group by productId, summing quantity
-    const topSellers = await OrderItem.findAll({
-      attributes: [
-        'productId',
-        'productName',
-        'sku',
-        [sequelize.fn('SUM', sequelize.col('OrderItem.quantity')), 'totalSold'],
-        [sequelize.fn('SUM', sequelize.literal('OrderItem.quantity * OrderItem.price')), 'totalRevenue']
-      ],
-      include: [
-        {
-          model: Product,
-          as: 'product',
-          attributes: ['thumbnail']
+    // We group by product (ref productId), summing quantity
+    const topSellersAgg = await OrderItem.aggregate([
+      {
+        $group: {
+          _id: '$product',
+          productName: { $first: '$productName' },
+          sku: { $first: '$sku' },
+          totalSold: { $sum: '$quantity' },
+          totalRevenue: { $sum: { $multiply: ['$quantity', '$price'] } }
         }
-      ],
-      group: ['OrderItem.product_id', 'OrderItem.product_name', 'OrderItem.sku', 'product.id'],
-      order: [[sequelize.literal('totalSold'), 'DESC']],
-      limit: 5
-    });
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Populate the product details
+    const topSellers = await Promise.all(topSellersAgg.map(async (item) => {
+      let productDetails = null;
+      if (item._id) {
+        productDetails = await Product.findById(item._id).select('thumbnail');
+      }
+      return {
+        productId: item._id,
+        productName: item.productName,
+        sku: item.sku,
+        totalSold: item.totalSold,
+        totalRevenue: parseFloat(item.totalRevenue.toFixed(2)),
+        product: productDetails ? { thumbnail: productDetails.thumbnail } : null
+      };
+    }));
 
     // 4. Fetch Latest 5 Orders
-    const latestOrders = await Order.findAll({
-      attributes: ['id', 'orderNumber', 'totalAmount', 'orderStatus', 'createdAt'],
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['firstName', 'lastName', 'email']
-        }
-      ],
-      order: [['createdAt', 'DESC']],
-      limit: 5
-    });
+    const latestOrdersDocs = await Order.find()
+      .select('id orderNumber totalAmount orderStatus createdAt user')
+      .populate('user', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    const latestOrders = latestOrdersDocs.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      orderStatus: order.orderStatus,
+      createdAt: order.createdAt,
+      user: order.user
+    }));
 
     // 5. Monthly Sales Aggregation (Last 6 Months)
-    // We query order collections, grouping by month/year
-    // To ensure portability across SQLite and MySQL, we can extract details via manual dates grouping or raw dialect queries.
-    // Let's implement an elegant manual distribution query or dynamic dialect formatter.
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1); // Start of month
+    sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const ordersForChart = await Order.findAll({
-      where: {
-        createdAt: {
-          [Op.gte]: sixMonthsAgo
-        },
-        paymentStatus: 'paid'
+    const ordersForChart = await Order.find({
+      createdAt: {
+        $gte: sixMonthsAgo
       },
-      attributes: ['totalAmount', 'createdAt'],
-      order: [['createdAt', 'ASC']]
-    });
+      paymentStatus: 'paid'
+    }).select('totalAmount createdAt').sort({ createdAt: 1 });
 
-    // Let's group and format month labels dynamically in JS so it works flawlessly on BOTH MySQL and SQLite dialects!
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const chartDataMap = {};
 
@@ -109,14 +105,16 @@ const getDashboardStats = async (req, res, next) => {
       }
     });
 
-    const monthlySalesChart = Object.values(chartDataMap);
+    const monthlySalesChart = Object.values(chartDataMap).map(c => ({
+      ...c,
+      sales: parseFloat(c.sales.toFixed(2))
+    }));
 
     // 6. Get Recent Admin Activity Logs
-    const recentActivity = await AdminLog.findAll({
-      attributes: ['id', 'action', 'entityType', 'createdAt'],
-      order: [['createdAt', 'DESC']],
-      limit: 8
-    });
+    const recentActivity = await AdminLog.find()
+      .select('id action entityType createdAt')
+      .sort({ createdAt: -1 })
+      .limit(8);
 
     res.json({
       success: true,

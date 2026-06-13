@@ -5,7 +5,7 @@ const { Setting, AdminLog } = require('../models');
 // @access  Private
 const getSettings = async (req, res, next) => {
   try {
-    const settingsList = await Setting.findAll();
+    const settingsList = await Setting.find();
     
     // Convert array of key-value records into a flat JSON object!
     const settings = {};
@@ -34,11 +34,12 @@ const updateSettings = async (req, res, next) => {
       settingsPayload['site_logo'] = `/uploads/site/${req.file.filename}`;
     }
 
-    for (const key of Object.keys(settingsPayload)) {
-      const [settingRecord] = await Setting.findOrCreate({ where: { key } });
-      settingRecord.value = settingsPayload[key] !== null ? settingsPayload[key].toString() : '';
-      await settingRecord.save();
-    }
+    const updatePromises = Object.keys(settingsPayload).map(async (key) => {
+      const val = settingsPayload[key] !== null ? settingsPayload[key].toString() : '';
+      return await Setting.findOneAndUpdate({ key }, { value: val }, { upsert: true, new: true });
+    });
+
+    await Promise.all(updatePromises);
 
     await AdminLog.create({
       adminId: req.admin.id,
@@ -48,7 +49,7 @@ const updateSettings = async (req, res, next) => {
     });
 
     // Re-fetch flat settings
-    const settingsList = await Setting.findAll();
+    const settingsList = await Setting.find();
     const settings = {};
     settingsList.forEach(s => {
       settings[s.key] = s.value;

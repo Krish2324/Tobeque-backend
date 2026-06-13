@@ -1,42 +1,51 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const Payment = sequelize.define('Payment', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  orderId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'order_id'
+const PaymentSchema = new mongoose.Schema({
+  order: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+    required: true
   },
   transactionId: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true,
-    field: 'transaction_id'
+    type: String,
+    unique: true
   },
   gateway: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'stripe'
+    type: String,
+    required: true,
+    default: 'stripe'
   },
   amount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false
+    type: Number,
+    required: true
   },
   status: {
-    type: DataTypes.ENUM('succeeded', 'failed', 'pending', 'refunded'),
-    allowNull: false,
-    defaultValue: 'pending'
+    type: String,
+    enum: ['succeeded', 'failed', 'pending', 'refunded'],
+    default: 'pending',
+    required: true
   },
   gatewayResponse: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    field: 'gateway_response'
+    type: mongoose.Schema.Types.Mixed
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = Payment;
+module.exports = mongoose.model('Payment', PaymentSchema);

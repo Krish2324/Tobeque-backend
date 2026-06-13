@@ -19,17 +19,12 @@ const slugify = (text) => {
 const getCategories = async (req, res, next) => {
   try {
     // Fetch only root categories (parentId = null) and recursively include their subcategories
-    const categories = await Category.findAll({
-      where: { parentId: null },
-      include: [
-        {
-          model: Category,
-          as: 'subcategories',
-          include: [{ model: Category, as: 'subcategories' }] // Support up to 3 levels out-of-the-box
-        }
-      ],
-      order: [['name', 'ASC']]
-    });
+    const categories = await Category.find({ parentId: null })
+      .populate({
+        path: 'subcategories',
+        populate: { path: 'subcategories' }
+      })
+      .sort({ name: 1 });
 
     res.json({
       success: true,
@@ -45,9 +40,9 @@ const getCategories = async (req, res, next) => {
 // @access  Private
 const createCategory = async (req, res, next) => {
   try {
-    const { name, slug: providedSlug, description, parentId, seoTitle, seoDescription, displayType, googleProductCategory } = req.body;
+    const { name, description, parentId, seoTitle, seoDescription } = req.body;
 
-    const slug = providedSlug ? slugify(providedSlug) : (slugify(name) + '-' + Math.floor(Math.random() * 1000));
+    const slug = slugify(name) + '-' + Math.floor(Math.random() * 1000);
 
     let image = '';
     let banner = '';
@@ -65,13 +60,11 @@ const createCategory = async (req, res, next) => {
       name,
       slug,
       description,
-      parentId: parentId ? parseInt(parentId) : null,
+      parentId: parentId || null,
       image,
       banner,
       seoTitle,
-      seoDescription,
-      displayType: displayType || 'Default',
-      googleProductCategory
+      seoDescription
     });
 
     await AdminLog.create({
@@ -96,36 +89,29 @@ const createCategory = async (req, res, next) => {
 // @access  Private
 const updateCategory = async (req, res, next) => {
   try {
-    const category = await Category.findByPk(req.params.id);
+    const category = await Category.findById(req.params.id);
 
     if (!category) {
       return res.status(404).json({ success: false, error: 'Category not found' });
     }
 
-    const { name, slug: providedSlug, description, parentId, seoTitle, seoDescription, displayType, googleProductCategory } = req.body;
+    const { name, description, parentId, seoTitle, seoDescription } = req.body;
 
     if (name && name !== category.name) {
       category.name = name;
-      if (!providedSlug) {
-        category.slug = slugify(name) + '-' + Math.floor(Math.random() * 1000);
-      }
-    }
-    if (providedSlug && providedSlug !== category.slug) {
-      category.slug = slugify(providedSlug);
+      category.slug = slugify(name) + '-' + Math.floor(Math.random() * 1000);
     }
 
     category.description = description !== undefined ? description : category.description;
     category.seoTitle = seoTitle !== undefined ? seoTitle : category.seoTitle;
     category.seoDescription = seoDescription !== undefined ? seoDescription : category.seoDescription;
-    category.displayType = displayType !== undefined ? displayType : category.displayType;
-    category.googleProductCategory = googleProductCategory !== undefined ? googleProductCategory : category.googleProductCategory;
     
     if (parentId !== undefined) {
       // Prevent mapping to self as parent
-      if (parentId && parseInt(parentId) === category.id) {
+      if (parentId && parentId.toString() === category.id) {
         return res.status(400).json({ success: false, error: 'Category cannot be its own subcategory parent' });
       }
-      category.parentId = parentId ? parseInt(parentId) : null;
+      category.parentId = parentId || null;
     }
 
     if (req.files) {
@@ -161,7 +147,7 @@ const updateCategory = async (req, res, next) => {
 // @access  Private
 const deleteCategory = async (req, res, next) => {
   try {
-    const category = await Category.findByPk(req.params.id);
+    const category = await Category.findById(req.params.id);
 
     if (!category) {
       return res.status(404).json({ success: false, error: 'Category not found' });
@@ -170,7 +156,7 @@ const deleteCategory = async (req, res, next) => {
     const catName = category.name;
     const catId = category.id;
 
-    await category.destroy();
+    await category.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,
@@ -196,7 +182,7 @@ const deleteCategory = async (req, res, next) => {
 // @access  Private
 const getBrands = async (req, res, next) => {
   try {
-    const brands = await Brand.findAll({ order: [['name', 'ASC']] });
+    const brands = await Brand.find().sort({ name: 1 });
     res.json({
       success: true,
       brands
@@ -248,7 +234,7 @@ const createBrand = async (req, res, next) => {
 // @access  Private
 const updateBrand = async (req, res, next) => {
   try {
-    const brand = await Brand.findByPk(req.params.id);
+    const brand = await Brand.findById(req.params.id);
     if (!brand) {
       return res.status(404).json({ success: false, error: 'Brand not found' });
     }
@@ -290,7 +276,7 @@ const updateBrand = async (req, res, next) => {
 // @access  Private
 const deleteBrand = async (req, res, next) => {
   try {
-    const brand = await Brand.findByPk(req.params.id);
+    const brand = await Brand.findById(req.params.id);
     if (!brand) {
       return res.status(404).json({ success: false, error: 'Brand not found' });
     }
@@ -298,7 +284,7 @@ const deleteBrand = async (req, res, next) => {
     const brandName = brand.name;
     const brandId = brand.id;
 
-    await brand.destroy();
+    await brand.deleteOne();
 
     await AdminLog.create({
       adminId: req.admin.id,

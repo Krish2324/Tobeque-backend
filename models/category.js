@@ -1,59 +1,60 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const Category = sequelize.define('Category', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const CategorySchema = new mongoose.Schema({
   name: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: String,
+    required: true
   },
   slug: {
-    type: DataTypes.STRING,
-    allowNull: false,
+    type: String,
+    required: true,
     unique: true
   },
   description: {
-    type: DataTypes.TEXT,
-    allowNull: true
+    type: String
   },
   image: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String
   },
   banner: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: String
   },
   parentId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'parent_id'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null
   },
   seoTitle: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'seo_title'
+    type: String
   },
   seoDescription: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'seo_description'
+    type: String
+  }
+}, {
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   },
-  displayType: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    defaultValue: 'Default',
-    field: 'display_type'
-  },
-  googleProductCategory: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'google_product_category'
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
   }
 });
 
-module.exports = Category;
+// Virtual for subcategories (self-referential)
+CategorySchema.virtual('subcategories', {
+  ref: 'Category',
+  localField: '_id',
+  foreignField: 'parentId'
+});
+
+module.exports = mongoose.model('Category', CategorySchema);

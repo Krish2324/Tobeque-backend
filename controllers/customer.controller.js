@@ -1,5 +1,4 @@
 const { User, Order, AdminLog } = require('../models');
-const { Op } = require('sequelize');
 
 // @desc    Get List of Customers
 // @route   GET /api/customers
@@ -24,21 +23,20 @@ const getCustomers = async (req, res, next) => {
     }
 
     if (search) {
-      where[Op.or] = [
-        { firstName: { [Op.like]: `%${search}%` } },
-        { lastName: { [Op.like]: `%${search}%` } },
-        { email: { [Op.like]: `%${search}%` } },
-        { phone: { [Op.like]: `%${search}%` } }
+      const searchRegex = new RegExp(search, 'i');
+      where.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex }
       ];
     }
 
-    const { count, rows } = await User.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [[sortBy, sortDir.toUpperCase()]],
-      distinct: true
-    });
+    const count = await User.countDocuments(where);
+    const rows = await User.find(where)
+      .limit(parseInt(limit))
+      .skip(parseInt(offset))
+      .sort({ [sortBy]: sortDir.toUpperCase() === 'DESC' ? -1 : 1 });
 
     res.json({
       success: true,
@@ -62,19 +60,14 @@ const getCustomers = async (req, res, next) => {
 // @access  Private
 const getCustomerById = async (req, res, next) => {
   try {
-    const customer = await User.findByPk(req.params.id, {
-      attributes: { exclude: ['password'] }
-    });
+    const customer = await User.findById(req.params.id).select('-password');
 
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
 
     // Fetch complete ordering history
-    const orders = await Order.findAll({
-      where: { userId: customer.id },
-      order: [['createdAt', 'DESC']]
-    });
+    const orders = await Order.find({ user: customer.id }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -94,7 +87,7 @@ const toggleCustomerStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status } = req.body; // status should be 'active' or 'blocked'
 
-    const customer = await User.findByPk(id);
+    const customer = await User.findById(id);
 
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });

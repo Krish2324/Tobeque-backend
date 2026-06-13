@@ -1,39 +1,47 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const InventoryLog = sequelize.define('InventoryLog', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
+const InventoryLogSchema = new mongoose.Schema({
   productId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'product_id'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
   },
   stockChanged: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'stock_changed' // positive for additions, negative for deductions
+    type: Number,
+    required: true
   },
   actionType: {
-    type: DataTypes.ENUM('restock', 'sale', 'correction', 'return'),
-    allowNull: false,
-    defaultValue: 'correction',
-    field: 'action_type'
+    type: String,
+    enum: ['restock', 'sale', 'correction', 'return'],
+    default: 'correction',
+    required: true
   },
   reference: {
-    type: DataTypes.STRING,
-    allowNull: true // e.g. "Order #1029", "Admin Adjustment"
+    type: String
   },
   adminId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'admin_id'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    default: null
   }
 }, {
-  tableName: 'inventory_logs'
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    versionKey: false,
+    transform: function (doc, ret) {
+      ret.id = ret._id ? ret._id.toString() : ret.id;
+      delete ret._id;
+    }
+  }
 });
 
-module.exports = InventoryLog;
+module.exports = mongoose.model('InventoryLog', InventoryLogSchema);
