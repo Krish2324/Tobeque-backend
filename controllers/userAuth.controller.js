@@ -28,11 +28,15 @@ const sendOtp = async (req, res, next) => {
     const normalizedPhone = String(phone).replace(/\s+/g, '').replace(/-/g, '');
 
     // Find or create user by phone
-    let user = await User.findOne({ where: { phone: normalizedPhone } });
+    let user = await User.findOne({ phone: normalizedPhone });
 
     if (!user) {
       user = await User.create({
         phone: normalizedPhone,
+        firstName: 'Guest',
+        lastName: 'User',
+        email: `${normalizedPhone}@guest.local`,
+        password: DEV_OTP,
         status: 'active'
       });
     }
@@ -72,7 +76,7 @@ const verifyOtp = async (req, res, next) => {
 
     const normalizedPhone = String(phone).replace(/\s+/g, '').replace(/-/g, '');
 
-    const user = await User.findOne({ where: { phone: normalizedPhone } });
+    const user = await User.findOne({ phone: normalizedPhone });
 
     if (!user) {
       return res.status(404).json({ success: false, error: 'No account found for this phone number. Please request an OTP first.' });
@@ -134,7 +138,7 @@ const validateCoupon = async (req, res, next) => {
     }
 
     const codeUpper = code.toString().toUpperCase().trim();
-    const coupon = await Coupon.findOne({ where: { code: codeUpper } });
+    const coupon = await Coupon.findOne({ code: codeUpper });
 
     if (!coupon) {
       return res.status(404).json({ success: false, error: 'Invalid coupon code' });
@@ -180,9 +184,7 @@ const validateCoupon = async (req, res, next) => {
 // @access  Private (user)
 const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password', 'otpCode', 'otpExpiry'] }
-    });
+    const user = await User.findById(req.user.id).select('-password -otpCode -otpExpiry');
 
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
@@ -199,23 +201,15 @@ const getUserProfile = async (req, res, next) => {
 // @access  Private (user)
 const getUserOrders = async (req, res, next) => {
   try {
-    const orders = await Order.findAll({
-      where: { userId: req.user.id },
-      order: [['createdAt', 'DESC']],
-      include: [
-        {
-          model: OrderItem,
-          as: 'items',
-          include: [
-            {
-              model: Product,
-              as: 'product',
-              attributes: ['name', 'thumbnail']
-            }
-          ]
+    const orders = await Order.find({ user: req.user.id })
+      .sort('-createdAt')
+      .populate({
+        path: 'items',
+        populate: {
+          path: 'product',
+          select: 'name thumbnail'
         }
-      ]
-    });
+      });
 
     res.json({ success: true, orders });
   } catch (error) {
@@ -228,7 +222,7 @@ const getUserOrders = async (req, res, next) => {
 // @access  Private (user)
 const updateUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
@@ -288,7 +282,7 @@ const createOrder = async (req, res, next) => {
     // Process items and check stock
     const processedItems = [];
     for (const item of items) {
-      const product = await Product.findByPk(item.productId);
+      const product = await Product.findById(item.productId);
       if (!product) {
         return res.status(404).json({ success: false, error: `Product not found for ID ${item.productId}` });
       }
@@ -311,7 +305,7 @@ const createOrder = async (req, res, next) => {
 
     if (couponCode) {
       const codeUpper = couponCode.toString().toUpperCase().trim();
-      const coupon = await Coupon.findOne({ where: { code: codeUpper, status: true } });
+      const coupon = await Coupon.findOne({ code: codeUpper, status: true });
       
       if (coupon) {
         const now = new Date();
@@ -355,7 +349,7 @@ const createOrder = async (req, res, next) => {
 
     // Create the order
     const order = await Order.create({
-      userId: req.user.id,
+      user: req.user.id,
       orderNumber,
       subtotal,
       totalAmount,
@@ -372,8 +366,8 @@ const createOrder = async (req, res, next) => {
     // Create order items and deduct inventory
     for (const pItem of processedItems) {
       await OrderItem.create({
-        orderId: order.id,
-        productId: pItem.productId,
+        order: order._id,
+        product: pItem.productId,
         productName: pItem.productName,
         sku: pItem.sku,
         price: pItem.price,
@@ -382,7 +376,7 @@ const createOrder = async (req, res, next) => {
       });
 
       // Deduct inventory
-      const productToUpdate = await Product.findByPk(pItem.productId);
+      const productToUpdate = await Product.findById(pItem.productId);
       if (productToUpdate) {
         productToUpdate.stockQuantity = Math.max(0, productToUpdate.stockQuantity - pItem.quantity);
         await productToUpdate.save();
@@ -408,7 +402,7 @@ const uploadProfilePhoto = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'No image file provided' });
     }
 
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
