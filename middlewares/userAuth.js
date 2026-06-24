@@ -25,9 +25,7 @@ const protectUser = async (req, res, next) => {
         });
       }
 
-      req.user = await User.findByPk(decoded.id, {
-        attributes: { exclude: ['password', 'otpCode', 'otpExpiry'] }
-      });
+      req.user = await User.findById(decoded.id).select('-password -otpCode -otpExpiry');
 
       if (!req.user) {
         return res.status(401).json({

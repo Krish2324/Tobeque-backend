@@ -27,6 +27,30 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'blocked'],
     default: 'active'
+  },
+  otpCode: {
+    type: String
+  },
+  otpExpiry: {
+    type: Date
+  },
+  address: {
+    type: String
+  },
+  city: {
+    type: String
+  },
+  state: {
+    type: String
+  },
+  zipCode: {
+    type: String
+  },
+  gender: {
+    type: String
+  },
+  profilePhoto: {
+    type: String
   }
 }, {
   timestamps: true,
