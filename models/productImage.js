@@ -9,6 +9,10 @@ const ProductImageSchema = new mongoose.Schema({
   imageUrl: {
     type: String,
     required: true
+  },
+  color: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true,

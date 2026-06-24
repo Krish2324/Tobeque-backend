@@ -77,7 +77,7 @@ const getProducts = async (req, res, next) => {
       .sort({ [sortBy]: sortDir.toUpperCase() === 'DESC' ? -1 : 1 })
       .populate('category', 'id name')
       .populate('brand', 'id name')
-      .populate('images', 'id imageUrl');
+      .populate('images', 'id imageUrl color');
 
     res.json({
       success: true,
@@ -104,7 +104,7 @@ const getProductById = async (req, res, next) => {
     const product = await Product.findById(req.params.id)
       .populate('category', 'id name')
       .populate('brand', 'id name')
-      .populate('images', 'id imageUrl');
+      .populate('images', 'id imageUrl color');
 
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found' });
@@ -156,7 +156,8 @@ const createProduct = async (req, res, next) => {
       whatsAppNumber,
       callToAction,
       preFilledMessage,
-      displaySettings
+      displaySettings,
+      imageColors
     } = req.body;
 
     // Check SKU unique
@@ -232,9 +233,14 @@ const createProduct = async (req, res, next) => {
 
     // Create additional product gallery images if uploaded
     if (req.files && req.files.images) {
-      const imageRecords = req.files.images.map((img) => ({
+      let parsedImageColors = [];
+      if (imageColors) {
+        parsedImageColors = Array.isArray(imageColors) ? imageColors : [imageColors];
+      }
+      const imageRecords = req.files.images.map((img, idx) => ({
         product: product.id,
-        imageUrl: `/uploads/products/${img.filename}`
+        imageUrl: `/uploads/products/${img.filename}`,
+        color: parsedImageColors[idx] || null
       }));
       await ProductImage.insertMany(imageRecords);
     }
@@ -302,7 +308,8 @@ const updateProduct = async (req, res, next) => {
       whatsAppNumber,
       callToAction,
       preFilledMessage,
-      displaySettings
+      displaySettings,
+      imageColors
     } = req.body;
 
     if (sku && sku !== product.sku) {
@@ -402,9 +409,14 @@ const updateProduct = async (req, res, next) => {
 
     // Create additional product gallery images if uploaded
     if (req.files && req.files.images) {
-      const imageRecords = req.files.images.map((img) => ({
+      let parsedImageColors = [];
+      if (imageColors) {
+        parsedImageColors = Array.isArray(imageColors) ? imageColors : [imageColors];
+      }
+      const imageRecords = req.files.images.map((img, idx) => ({
         product: product.id,
-        imageUrl: `/uploads/products/${img.filename}`
+        imageUrl: `/uploads/products/${img.filename}`,
+        color: parsedImageColors[idx] || null
       }));
       await ProductImage.insertMany(imageRecords);
     }
