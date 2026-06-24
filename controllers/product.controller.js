@@ -45,7 +45,17 @@ const getProducts = async (req, res, next) => {
     }
 
     if (category) {
-      where.category = category;
+      const mongoose = require('mongoose');
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        where.category = category;
+      } else {
+        const categoryDoc = await Category.findOne({ name: new RegExp('^' + category + '$', 'i') });
+        if (categoryDoc) {
+          where.category = categoryDoc._id;
+        } else {
+          where.category = null; // force empty result if category not found
+        }
+      }
     }
 
     if (brand) {

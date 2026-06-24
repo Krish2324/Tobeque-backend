@@ -140,8 +140,8 @@ const runSeeder = async () => {
     });
 
     const casualDresses = await Category.create({
-      name: 'Casual Dresses',
-      slug: 'casual-dresses',
+      name: 'Dresses',
+      slug: 'dresses',
       description: 'Everyday casual dresses and sundresses',
       parentId: westernWear.id
     });
@@ -168,18 +168,43 @@ const runSeeder = async () => {
     });
 
     const topsAndBlouses = await Category.create({
-      name: 'Tops & Blouses',
-      slug: 'tops-blouses',
+      name: 'Tops',
+      slug: 'tops',
       description: 'Crop tops, tube tops, shirts and blouses',
       parentId: westernWear.id
     });
 
     const skirts = await Category.create({
-      name: 'Skirts',
-      slug: 'skirts',
-      description: 'Mini, midi, maxi and pleated skirts',
+      name: 'Skirts and Shorts',
+      slug: 'skirts-and-shorts',
+      description: 'Mini, midi, maxi and pleated skirts and shorts',
       parentId: westernWear.id
     });
+
+    const shirtsAndBlouses = await Category.create({
+      name: 'Shirts and Blouses',
+      slug: 'shirts-and-blouses',
+      parentId: westernWear.id
+    });
+
+    const tshirtsAndVests = await Category.create({
+      name: 'T-Shirts and Vests',
+      slug: 't-shirts-and-vests',
+      parentId: westernWear.id
+    });
+
+    const jeansAndPants = await Category.create({
+      name: 'Jeans and Pants',
+      slug: 'jeans-and-pants',
+      parentId: westernWear.id
+    });
+
+    const newIn = await Category.create({ name: 'New In', slug: 'new-in' });
+    const summer26 = await Category.create({ name: 'Summer-26', slug: 'summer-26' });
+    const customisable = await Category.create({ name: 'Customisable', slug: 'customisable' });
+    const collaboration = await Category.create({ name: 'Collaboration', slug: 'collaboration' });
+    const styleJournal = await Category.create({ name: 'Style Journal', slug: 'style-journal' });
+    const stealTheStyle = await Category.create({ name: 'Steal The Style', slug: 'steal-the-style' });
 
     // ── Sub: Party & Occasion Wear ──
     const partyWear = await Category.create({
@@ -813,6 +838,114 @@ const runSeeder = async () => {
         { color: 'Sage Green Print', size: 'S', stock: 5, sku: 'DRS-PSN-020-SAG-S' },
         { color: 'Sage Green Print', size: 'M', stock: 5, sku: 'DRS-PSN-020-SAG-M' }
       ]
+    });
+
+    const p26 = await Product.create({
+      name: 'Casual White Shirt',
+      slug: 'casual-white-shirt',
+      sku: 'SHR-001',
+      price: 1599.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: shirtsAndBlouses.id,
+      brand: hm.id,
+      thumbnail: 'https://images.unsplash.com/photo-1598032895397-b9472444bf93?w=600'
+    });
+
+    const p27 = await Product.create({
+      name: 'Graphic T-Shirt',
+      slug: 'graphic-t-shirt',
+      sku: 'TSH-001',
+      price: 799.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: tshirtsAndVests.id,
+      brand: hm.id,
+      thumbnail: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'
+    });
+
+    const p28 = await Product.create({
+      name: 'High Waist Denim Jeans',
+      slug: 'high-waist-denim-jeans',
+      sku: 'JEA-001',
+      price: 2499.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: jeansAndPants.id,
+      brand: zara.id,
+      thumbnail: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600'
+    });
+
+    const p29 = await Product.create({
+      name: 'Summer Trend Dress',
+      slug: 'summer-trend-dress',
+      sku: 'NEW-001',
+      price: 2999.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: newIn.id,
+      brand: zara.id,
+      thumbnail: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600'
+    });
+
+    const p30 = await Product.create({
+      name: 'Summer 26 Collection Top',
+      slug: 'summer-26-top',
+      sku: 'SUM-001',
+      price: 1999.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: summer26.id,
+      brand: zara.id,
+      thumbnail: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600'
+    });
+
+    const p31 = await Product.create({
+      name: 'Customisable Dress',
+      slug: 'customisable-dress',
+      sku: 'CUS-001',
+      price: 3999.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: customisable.id,
+      brand: zara.id,
+      thumbnail: 'https://images.unsplash.com/photo-1515347619253-12fb3416f463?w=600'
+    });
+
+    const p32 = await Product.create({
+      name: 'Designer Collaboration Top',
+      slug: 'collab-top',
+      sku: 'COL-001',
+      price: 4999.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: collaboration.id,
+      brand: mango.id,
+      thumbnail: 'https://images.unsplash.com/photo-1434389670869-c41031316b25?w=600'
+    });
+
+    const p33 = await Product.create({
+      name: 'Style Journal Editor Pick',
+      slug: 'style-journal-pick',
+      sku: 'STY-001',
+      price: 5999.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: styleJournal.id,
+      brand: zara.id,
+      thumbnail: 'https://images.unsplash.com/photo-1485230895905-ef0cd37e0ef9?w=600'
+    });
+
+    const p34 = await Product.create({
+      name: 'Steal The Style Outfit',
+      slug: 'steal-the-style',
+      sku: 'STL-001',
+      price: 3499.00,
+      stockQuantity: 100,
+      status: 'published',
+      category: stealTheStyle.id,
+      brand: mango.id,
+      thumbnail: 'https://images.unsplash.com/photo-1516762689617-e1cffcef479d?w=600'
     });
 
     // ─────────────────────────────────────────────
