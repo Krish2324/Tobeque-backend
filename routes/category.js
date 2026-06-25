@@ -7,13 +7,16 @@ const {
 const { protect, authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
-// Protect all routes
-router.use(protect);
+// ─── PUBLIC ROUTES (no auth required) ────────────────────────────────────────
+// Used by the frontend website to list categories & brands
+router.get('/public', getCategories);
+router.get('/brands/all', getBrands);
 
-// === Category Routes ===
-router.get('/', getCategories);
+// ─── PROTECTED ROUTES (admin JWT required) ────────────────────────────────────
+router.get('/', protect, getCategories);
 router.post(
   '/',
+  protect,
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'banner', maxCount: 1 }
@@ -22,18 +25,18 @@ router.post(
 );
 router.put(
   '/:id',
+  protect,
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'banner', maxCount: 1 }
   ]),
   updateCategory
 );
-router.delete('/:id', authorize('superadmin', 'manager'), deleteCategory);
+router.delete('/:id', protect, authorize('superadmin', 'manager'), deleteCategory);
 
-// === Brand Routes ===
-router.get('/brands/all', getBrands);
-router.post('/brands', upload.single('logo'), createBrand);
-router.put('/brands/:id', upload.single('logo'), updateBrand);
-router.delete('/brands/:id', authorize('superadmin', 'manager'), deleteBrand);
+// === Brand Protected Routes ===
+router.post('/brands', protect, upload.single('logo'), createBrand);
+router.put('/brands/:id', protect, upload.single('logo'), updateBrand);
+router.delete('/brands/:id', protect, authorize('superadmin', 'manager'), deleteBrand);
 
 module.exports = router;

@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const seasonCollectionSchema = new mongoose.Schema({
-  product: {
+  category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
+    ref: 'Category',
     required: true
   },
   displayLabel: {
@@ -21,7 +21,7 @@ const seasonCollectionSchema = new mongoose.Schema({
     required: true,
     default: true
   },
-  videoUrl: {
+  imageOverride: {
     type: String,
     default: null
   }
