@@ -61,6 +61,7 @@ app.use('/api/reports', require('./routes/report'));
 app.use('/api/settings', require('./routes/setting'));
 app.use('/api/user-auth', require('./routes/userAuth'));
 app.use('/api/season-collection', require('./routes/seasonCollection'));
+app.use('/api/inquiries', require('./routes/inquiryRoutes'));
 
 // Root Status check
 app.get('/api/status', (req, res) => {
