@@ -83,8 +83,8 @@ const runSeeder = async () => {
       name: "Girls' Fashion",
       slug: 'girls-fashion',
       description: 'All types of dresses, ethnic wear, western wear and accessories for girls',
-      image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600',
-      banner: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200',
+      image: '/src/assets/images/seed-img-0.jpg',
+      banner: '/src/assets/images/seed-img-1.jpg',
       seoTitle: "Girls' Fashion - Dresses, Ethnic & Western Wear | Tobeque",
       seoDescription: 'Explore the latest trends in girls fashion. Shop ethnic dresses, western outfits, party wear and more.'
     });
@@ -94,7 +94,7 @@ const runSeeder = async () => {
       name: 'Ethnic & Traditional Wear',
       slug: 'ethnic-traditional-wear',
       description: 'Kurtas, Lehengas, Salwar Suits, Sarees and more',
-      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
+      image: '/src/assets/images/seed-img-2.jpg',
       parentId: girlsFashion.id,
       seoTitle: 'Ethnic Wear for Girls - Lehengas, Kurtas & Sarees',
       seoDescription: 'Shop beautiful ethnic wear for girls - Lehenga Choli, Salwar Suits, Anarkali and more.'
@@ -133,7 +133,7 @@ const runSeeder = async () => {
       name: 'Western Wear',
       slug: 'western-wear',
       description: 'Dresses, Tops, Jeans, Co-ords and Skirts',
-      image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600',
+      image: '/src/assets/images/seed-img-3.jpg',
       parentId: girlsFashion.id,
       seoTitle: 'Western Wear for Girls - Dresses, Tops & Skirts',
       seoDescription: 'Shop trendy western wear for girls - dresses, crop tops, skirts, jeans, co-ords and more.'
@@ -211,7 +211,7 @@ const runSeeder = async () => {
       name: 'Party & Occasion Wear',
       slug: 'party-occasion-wear',
       description: 'Gowns, cocktail dresses and occasion outfits',
-      image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600',
+      image: '/src/assets/images/seed-img-4.jpg',
       parentId: girlsFashion.id,
       seoTitle: 'Party Wear & Occasion Dresses for Girls',
       seoDescription: 'Make every occasion special with our stunning party wear collection for girls.'
@@ -236,7 +236,7 @@ const runSeeder = async () => {
       name: 'Activewear & Loungewear',
       slug: 'activewear-loungewear',
       description: 'Gym wear, yoga pants, sports bras and loungewear sets',
-      image: 'https://images.unsplash.com/photo-1518459031867-a89b944bffe4?w=600',
+      image: '/src/assets/images/seed-img-5.jpg',
       parentId: girlsFashion.id,
       seoTitle: 'Activewear & Loungewear for Girls',
       seoDescription: 'Stay active and comfortable with our premium activewear and loungewear collection.'
@@ -261,7 +261,7 @@ const runSeeder = async () => {
       name: 'Winter Wear',
       slug: 'winter-wear',
       description: 'Sweaters, cardigans, coats and jackets',
-      image: 'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=600',
+      image: '/src/assets/images/seed-img-6.jpg',
       parentId: girlsFashion.id,
       seoTitle: 'Winter Wear for Girls - Sweaters, Coats & Jackets',
       seoDescription: 'Stay warm in style with our winter collection for girls.'
@@ -304,7 +304,7 @@ const runSeeder = async () => {
       dimensions: 'Free Size, Customizable',
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600',
+      thumbnail: '/src/assets/images/seed-img-2.jpg',
       variants: [
         { color: 'Maroon', size: 'S', stock: 5, sku: 'LHG-RVB-001-MAR-S' },
         { color: 'Maroon', size: 'M', stock: 7, sku: 'LHG-RVB-001-MAR-M' },
@@ -332,7 +332,7 @@ const runSeeder = async () => {
       weight: 0.6,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600',
+      thumbnail: '/src/assets/images/seed-img-7.jpg',
       variants: [
         { color: 'Pink Floral', size: 'XS', stock: 10, sku: 'ANK-FLO-002-PNK-XS' },
         { color: 'Pink Floral', size: 'S', stock: 15, sku: 'ANK-FLO-002-PNK-S' },
@@ -361,7 +361,7 @@ const runSeeder = async () => {
       weight: 0.3,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600',
+      thumbnail: '/src/assets/images/seed-img-8.jpg',
       variants: [
         { color: 'Indigo Blue', size: 'XS', stock: 20, sku: 'KRT-BLK-003-IND-XS' },
         { color: 'Indigo Blue', size: 'S', stock: 25, sku: 'KRT-BLK-003-IND-S' },
@@ -388,7 +388,7 @@ const runSeeder = async () => {
       weight: 0.9,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1617627143233-5bb2ff8c89cb?w=600',
+      thumbnail: '/src/assets/images/seed-img-9.jpg',
       variants: [
         { color: 'Royal Blue & Gold', size: 'Standard (6.3m)', stock: 10, sku: 'SAR-BAN-004-BLU' },
         { color: 'Wine & Gold', size: 'Standard (6.3m)', stock: 10, sku: 'SAR-BAN-004-WIN' },
@@ -416,7 +416,7 @@ const runSeeder = async () => {
       weight: 0.4,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600',
+      thumbnail: '/src/assets/images/seed-img-10.jpg',
       variants: [
         { color: 'Yellow Floral', size: 'XS', stock: 15, sku: 'DRS-FWM-005-YEL-XS' },
         { color: 'Yellow Floral', size: 'S', stock: 20, sku: 'DRS-FWM-005-YEL-S' },
@@ -445,7 +445,7 @@ const runSeeder = async () => {
       weight: 0.35,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600',
+      thumbnail: '/src/assets/images/seed-img-4.jpg',
       variants: [
         { color: 'Gold', size: 'XS', stock: 8, sku: 'DRS-SEQ-006-GLD-XS' },
         { color: 'Gold', size: 'S', stock: 12, sku: 'DRS-SEQ-006-GLD-S' },
@@ -472,7 +472,7 @@ const runSeeder = async () => {
       weight: 0.5,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600',
+      thumbnail: '/src/assets/images/seed-img-11.jpg',
       variants: [
         { color: 'Sage Green', size: 'XS', stock: 12, sku: 'CRD-LIN-007-SAG-XS' },
         { color: 'Sage Green', size: 'S', stock: 15, sku: 'CRD-LIN-007-SAG-S' },
@@ -499,7 +499,7 @@ const runSeeder = async () => {
       weight: 0.45,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600',
+      thumbnail: '/src/assets/images/seed-img-3.jpg',
       variants: [
         { color: 'Blue & White', size: 'XS', stock: 15, sku: 'DRS-STR-008-BLU-XS' },
         { color: 'Blue & White', size: 'S', stock: 20, sku: 'DRS-STR-008-BLU-S' },
@@ -526,7 +526,7 @@ const runSeeder = async () => {
       weight: 0.25,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=600',
+      thumbnail: '/src/assets/images/seed-img-12.jpg',
       variants: [
         { color: 'Black', size: 'XS', stock: 10, sku: 'SKT-RUF-009-BLK-XS' },
         { color: 'Black', size: 'S', stock: 12, sku: 'SKT-RUF-009-BLK-S' },
@@ -553,7 +553,7 @@ const runSeeder = async () => {
       weight: 0.2,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1564584217132-2271feaeb3c5?w=600',
+      thumbnail: '/src/assets/images/seed-img-13.jpg',
       variants: [
         { color: 'White', size: 'XS', stock: 20, sku: 'TOP-BHO-010-WHT-XS' },
         { color: 'White', size: 'S', stock: 25, sku: 'TOP-BHO-010-WHT-S' },
@@ -582,7 +582,7 @@ const runSeeder = async () => {
       weight: 3.0,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600',
+      thumbnail: '/src/assets/images/seed-img-14.jpg',
       variants: [
         { color: 'Powder Blue', size: 'XS', stock: 4, sku: 'GWN-TUL-011-BLU-XS' },
         { color: 'Powder Blue', size: 'S', stock: 5, sku: 'GWN-TUL-011-BLU-S' },
@@ -610,7 +610,7 @@ const runSeeder = async () => {
       weight: 0.55,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=600',
+      thumbnail: '/src/assets/images/seed-img-15.jpg',
       variants: [
         { color: 'Deep Emerald', size: 'XS', stock: 6, sku: 'DRS-VLV-012-EMR-XS' },
         { color: 'Deep Emerald', size: 'S', stock: 8, sku: 'DRS-VLV-012-EMR-S' },
@@ -638,7 +638,7 @@ const runSeeder = async () => {
       weight: 0.3,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1518459031867-a89b944bffe4?w=600',
+      thumbnail: '/src/assets/images/seed-img-5.jpg',
       variants: [
         { color: 'Black', size: 'XS', stock: 30, sku: 'YGA-HWL-013-BLK-XS' },
         { color: 'Black', size: 'S', stock: 35, sku: 'YGA-HWL-013-BLK-S' },
@@ -665,7 +665,7 @@ const runSeeder = async () => {
       weight: 0.15,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=600',
+      thumbnail: '/src/assets/images/seed-img-16.jpg',
       variants: [
         { color: 'Lavender', size: 'XS', stock: 40, sku: 'SPT-RBD-014-LAV-XS' },
         { color: 'Lavender', size: 'S', stock: 50, sku: 'SPT-RBD-014-LAV-S' },
@@ -692,7 +692,7 @@ const runSeeder = async () => {
       weight: 0.7,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=600',
+      thumbnail: '/src/assets/images/seed-img-6.jpg',
       variants: [
         { color: 'Blush Pink', size: 'XS', stock: 15, sku: 'LNG-FLS-015-PNK-XS' },
         { color: 'Blush Pink', size: 'S', stock: 20, sku: 'LNG-FLS-015-PNK-S' },
@@ -721,7 +721,7 @@ const runSeeder = async () => {
       weight: 0.9,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600',
+      thumbnail: '/src/assets/images/seed-img-17.jpg',
       variants: [
         { color: 'Camel', size: 'S', stock: 15, sku: 'SWT-OVR-016-CAM-S' },
         { color: 'Camel', size: 'M', stock: 15, sku: 'SWT-OVR-016-CAM-M' },
@@ -747,7 +747,7 @@ const runSeeder = async () => {
       weight: 1.5,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=600',
+      thumbnail: '/src/assets/images/seed-img-18.jpg',
       variants: [
         { color: 'Camel Brown', size: 'XS', stock: 8, sku: 'COT-WBT-017-CAM-XS' },
         { color: 'Camel Brown', size: 'S', stock: 10, sku: 'COT-WBT-017-CAM-S' },
@@ -775,7 +775,7 @@ const runSeeder = async () => {
       weight: 0.55,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600',
+      thumbnail: '/src/assets/images/seed-img-19.jpg',
       variants: [
         { color: 'Light Blue Denim', size: 'XS', stock: 15, sku: 'DRS-DNM-018-LBL-XS' },
         { color: 'Light Blue Denim', size: 'S', stock: 20, sku: 'DRS-DNM-018-LBL-S' },
@@ -802,7 +802,7 @@ const runSeeder = async () => {
       weight: 0.4,
       status: 'published',
       isFeatured: true,
-      thumbnail: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600',
+      thumbnail: '/src/assets/images/seed-img-20.jpg',
       variants: [
         { color: 'Champagne', size: 'XS', stock: 10, sku: 'DRS-SAT-019-CHM-XS' },
         { color: 'Champagne', size: 'S', stock: 12, sku: 'DRS-SAT-019-CHM-S' },
@@ -829,7 +829,7 @@ const runSeeder = async () => {
       weight: 0.45,
       status: 'published',
       isFeatured: false,
-      thumbnail: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=600',
+      thumbnail: '/src/assets/images/seed-img-21.jpg',
       variants: [
         { color: 'Terra Cotta Print', size: 'XS', stock: 20, sku: 'DRS-PSN-020-TER-XS' },
         { color: 'Terra Cotta Print', size: 'S', stock: 25, sku: 'DRS-PSN-020-TER-S' },
@@ -849,7 +849,7 @@ const runSeeder = async () => {
       status: 'published',
       category: shirtsAndBlouses.id,
       brand: hm.id,
-      thumbnail: 'https://images.unsplash.com/photo-1598032895397-b9472444bf93?w=600'
+      thumbnail: '/src/assets/images/seed-img-22.jpg'
     });
 
     const p27 = await Product.create({
@@ -861,7 +861,7 @@ const runSeeder = async () => {
       status: 'published',
       category: tshirtsAndVests.id,
       brand: hm.id,
-      thumbnail: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'
+      thumbnail: '/src/assets/images/seed-img-23.jpg'
     });
 
     const p28 = await Product.create({
@@ -873,7 +873,7 @@ const runSeeder = async () => {
       status: 'published',
       category: jeansAndPants.id,
       brand: zara.id,
-      thumbnail: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=600'
+      thumbnail: '/src/assets/images/seed-img-24.jpg'
     });
 
     const p29 = await Product.create({
@@ -885,7 +885,7 @@ const runSeeder = async () => {
       status: 'published',
       category: newIn.id,
       brand: zara.id,
-      thumbnail: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600'
+      thumbnail: '/src/assets/images/seed-img-19.jpg'
     });
 
     const p30 = await Product.create({
@@ -897,7 +897,7 @@ const runSeeder = async () => {
       status: 'published',
       category: summer26.id,
       brand: zara.id,
-      thumbnail: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=600'
+      thumbnail: '/src/assets/images/seed-img-25.jpg'
     });
 
     const p31 = await Product.create({
@@ -909,7 +909,7 @@ const runSeeder = async () => {
       status: 'published',
       category: customisable.id,
       brand: zara.id,
-      thumbnail: 'https://images.unsplash.com/photo-1515347619253-12fb3416f463?w=600'
+      thumbnail: '/src/assets/images/seed-img-26.jpg'
     });
 
     const p32 = await Product.create({
@@ -921,7 +921,7 @@ const runSeeder = async () => {
       status: 'published',
       category: collaboration.id,
       brand: mango.id,
-      thumbnail: 'https://images.unsplash.com/photo-1434389670869-c41031316b25?w=600'
+      thumbnail: '/src/assets/images/seed-img-27.jpg'
     });
 
     const p33 = await Product.create({
@@ -933,7 +933,7 @@ const runSeeder = async () => {
       status: 'published',
       category: styleJournal.id,
       brand: zara.id,
-      thumbnail: 'https://images.unsplash.com/photo-1485230895905-ef0cd37e0ef9?w=600'
+      thumbnail: '/src/assets/images/seed-img-28.jpg'
     });
 
     const p34 = await Product.create({
@@ -945,7 +945,7 @@ const runSeeder = async () => {
       status: 'published',
       category: stealTheStyle.id,
       brand: mango.id,
-      thumbnail: 'https://images.unsplash.com/photo-1516762689617-e1cffcef479d?w=600'
+      thumbnail: '/src/assets/images/seed-img-29.jpg'
     });
 
     // ─────────────────────────────────────────────
@@ -954,48 +954,48 @@ const runSeeder = async () => {
     console.log('Seeding Product Images...');
     await ProductImage.create([
       // Royal Velvet Bridal Lehenga (p1)
-      { product: p1.id, imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800' },
-      { product: p1.id, imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800' },
-      { product: p1.id, imageUrl: 'https://images.unsplash.com/photo-1617627143233-5bb2ff8c89cb?w=800' },
+      { product: p1.id, imageUrl: '/src/assets/images/seed-img-30.jpg' },
+      { product: p1.id, imageUrl: '/src/assets/images/seed-img-31.jpg' },
+      { product: p1.id, imageUrl: '/src/assets/images/seed-img-32.jpg' },
 
       // Floral Anarkali Suit (p2)
-      { product: p2.id, imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800' },
-      { product: p2.id, imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800' },
+      { product: p2.id, imageUrl: '/src/assets/images/seed-img-33.jpg' },
+      { product: p2.id, imageUrl: '/src/assets/images/seed-img-31.jpg' },
 
       // Block Print Kurti (p3)
-      { product: p3.id, imageUrl: 'https://images.unsplash.com/photo-1564584217132-2271feaeb3c5?w=800' },
+      { product: p3.id, imageUrl: '/src/assets/images/seed-img-34.jpg' },
 
       // Banarasi Saree (p4)
-      { product: p4.id, imageUrl: 'https://images.unsplash.com/photo-1617627143233-5bb2ff8c89cb?w=800' },
-      { product: p4.id, imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800' },
+      { product: p4.id, imageUrl: '/src/assets/images/seed-img-32.jpg' },
+      { product: p4.id, imageUrl: '/src/assets/images/seed-img-30.jpg' },
 
       // Floral Wrap Midi Dress (p5)
-      { product: p5.id, imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800' },
-      { product: p5.id, imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800' },
+      { product: p5.id, imageUrl: '/src/assets/images/seed-img-35.jpg' },
+      { product: p5.id, imageUrl: '/src/assets/images/seed-img-36.jpg' },
 
       // Sequin Party Dress (p6)
-      { product: p6.id, imageUrl: 'https://images.unsplash.com/photo-1609805505555-7d0f92b0b4a7?w=800' },
-      { product: p6.id, imageUrl: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800' },
+      { product: p6.id, imageUrl: '/src/assets/images/seed-img-37.jpg' },
+      { product: p6.id, imageUrl: '/src/assets/images/seed-img-38.jpg' },
 
       // Co-ord Set (p7)
-      { product: p7.id, imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800' },
+      { product: p7.id, imageUrl: '/src/assets/images/seed-img-39.jpg' },
 
       // Striped Maxi Dress (p8)
-      { product: p8.id, imageUrl: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800' },
+      { product: p8.id, imageUrl: '/src/assets/images/seed-img-40.jpg' },
 
       // Tulle Ball Gown (p11)
-      { product: p11.id, imageUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800' },
-      { product: p11.id, imageUrl: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800' },
+      { product: p11.id, imageUrl: '/src/assets/images/seed-img-41.jpg' },
+      { product: p11.id, imageUrl: '/src/assets/images/seed-img-42.jpg' },
 
       // Cocktail Dress (p12)
-      { product: p12.id, imageUrl: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=800' },
+      { product: p12.id, imageUrl: '/src/assets/images/seed-img-38.jpg' },
 
       // Satin Slip Dress (p19)
-      { product: p19.id, imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800' },
-      { product: p19.id, imageUrl: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800' },
+      { product: p19.id, imageUrl: '/src/assets/images/seed-img-36.jpg' },
+      { product: p19.id, imageUrl: '/src/assets/images/seed-img-42.jpg' },
 
       // Trench Coat (p17)
-      { product: p17.id, imageUrl: 'https://images.unsplash.com/photo-1548624313-0396c75e4b1a?w=800' }
+      { product: p17.id, imageUrl: '/src/assets/images/seed-img-43.jpg' }
     ]);
 
     // ─────────────────────────────────────────────
@@ -1174,7 +1174,7 @@ const runSeeder = async () => {
       {
         title: 'Summer Fashion Festival',
         subtitle: 'Up to 30% off on all Western Wear',
-        imageUrl: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1400',
+        imageUrl: '/src/assets/images/seed-img-44.jpg',
         linkUrl: '/products?category=western-wear',
         position: 'home_slider',
         sortOrder: 1,
@@ -1183,7 +1183,7 @@ const runSeeder = async () => {
       {
         title: 'Festive Ethnic Collection',
         subtitle: 'Celebrate every occasion in style',
-        imageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1400',
+        imageUrl: '/src/assets/images/seed-img-45.jpg',
         linkUrl: '/products?category=ethnic-traditional-wear',
         position: 'home_slider',
         sortOrder: 2,
@@ -1192,7 +1192,7 @@ const runSeeder = async () => {
       {
         title: 'Prom & Party Season',
         subtitle: 'Gowns and cocktail dresses for every event',
-        imageUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1400',
+        imageUrl: '/src/assets/images/seed-img-46.jpg',
         linkUrl: '/products?category=party-occasion-wear',
         position: 'home_slider',
         sortOrder: 3,
@@ -1201,7 +1201,7 @@ const runSeeder = async () => {
       {
         title: 'New Arrivals - Co-ord Sets',
         subtitle: 'Fresh looks. Fresh season.',
-        imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=900',
+        imageUrl: '/src/assets/images/seed-img-47.jpg',
         linkUrl: '/products?category=co-ord-sets',
         position: 'promo_banner',
         sortOrder: 1,
@@ -1210,7 +1210,7 @@ const runSeeder = async () => {
       {
         title: 'Use Code ETHNIC20',
         subtitle: '20% off on ethnic wear above ₹2000',
-        imageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=900',
+        imageUrl: '/src/assets/images/seed-img-48.jpg',
         linkUrl: '/coupons',
         position: 'promo_banner',
         sortOrder: 2,
