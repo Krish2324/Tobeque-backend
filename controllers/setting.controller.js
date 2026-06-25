@@ -65,7 +65,26 @@ const updateSettings = async (req, res, next) => {
   }
 };
 
+const getPublicSettings = async (req, res, next) => {
+  try {
+    const settingsList = await Setting.find({ key: { $in: ['storeName', 'storeCurrency', 'deliveryEstimateMin', 'deliveryEstimateMax'] } });
+    
+    const settings = {};
+    settingsList.forEach(setting => {
+      settings[setting.key] = setting.value;
+    });
+
+    res.json({
+      success: true,
+      settings
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSettings,
-  updateSettings
+  updateSettings,
+  getPublicSettings
 };
