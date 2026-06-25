@@ -1,42 +1,32 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const mongoose = require('mongoose');
 
-const SeasonCollection = sequelize.define('SeasonCollection', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true
-  },
-  productId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'product_id'
+const seasonCollectionSchema = new mongoose.Schema({
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
   },
   displayLabel: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    field: 'display_label'
+    type: String,
+    maxLength: 100,
+    default: null
   },
   sortOrder: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-    field: 'sort_order'
+    type: Number,
+    required: true,
+    default: 0
   },
   isActive: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: true,
-    field: 'is_active'
+    type: Boolean,
+    required: true,
+    default: true
   },
   videoUrl: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'video_url'
+    type: String,
+    default: null
   }
 }, {
-  tableName: 'season_collections',
   timestamps: true
 });
 
-module.exports = SeasonCollection;
+module.exports = mongoose.model('SeasonCollection', seasonCollectionSchema);

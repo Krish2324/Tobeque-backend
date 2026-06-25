@@ -1,29 +1,29 @@
-const { SeasonCollection, Product, ProductImage, AdminLog } = require('../models');
+const { SeasonCollection, Product, AdminLog } = require('../models');
 
 // @desc    Get Season Collection (Public - for the website)
 // @route   GET /api/season-collection
 // @access  Public
 const getSeasonCollection = async (req, res, next) => {
   try {
-    const items = await SeasonCollection.findAll({
-      where: { isActive: true },
-      order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']],
-      include: [
-        {
-          model: Product,
-          as: 'product',
-          attributes: ['id', 'name', 'slug', 'thumbnail', 'price', 'discountPrice', 'status'],
-          include: [
-            { model: ProductImage, as: 'images', attributes: ['id', 'imageUrl'] }
-          ]
+    const items = await SeasonCollection.find({ isActive: true })
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .populate({
+        path: 'product',
+        select: 'name slug thumbnail price discountPrice status images',
+        populate: {
+          path: 'images',
+          select: 'imageUrl color'
         }
-      ]
-    });
+      });
 
     // Filter out items where the linked product is not published
     const published = items.filter(
       (item) => item.product && item.product.status === 'published'
-    );
+    ).map(item => ({
+      ...item.toJSON(),
+      productId: item.product._id,
+      id: item._id
+    }));
 
     res.json({ success: true, data: published });
   } catch (error) {
@@ -36,21 +36,24 @@ const getSeasonCollection = async (req, res, next) => {
 // @access  Private
 const getSeasonCollectionAdmin = async (req, res, next) => {
   try {
-    const items = await SeasonCollection.findAll({
-      order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']],
-      include: [
-        {
-          model: Product,
-          as: 'product',
-          attributes: ['id', 'name', 'slug', 'thumbnail', 'status'],
-          include: [
-            { model: ProductImage, as: 'images', attributes: ['id', 'imageUrl'] }
-          ]
+    const items = await SeasonCollection.find()
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .populate({
+        path: 'product',
+        select: 'name slug thumbnail status images',
+        populate: {
+          path: 'images',
+          select: 'imageUrl color'
         }
-      ]
-    });
+      });
 
-    res.json({ success: true, data: items });
+    const mappedItems = items.map(item => ({
+      ...item.toJSON(),
+      productId: item.product ? item.product._id : null,
+      id: item._id
+    }));
+
+    res.json({ success: true, data: mappedItems });
   } catch (error) {
     next(error);
   }
@@ -68,7 +71,7 @@ const addToSeasonCollection = async (req, res, next) => {
     }
 
     // Check if already in collection
-    const existing = await SeasonCollection.findOne({ where: { productId } });
+    const existing = await SeasonCollection.findOne({ product: productId });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -77,7 +80,7 @@ const addToSeasonCollection = async (req, res, next) => {
     }
 
     const item = await SeasonCollection.create({
-      productId: parseInt(productId),
+      product: productId,
       displayLabel: displayLabel || null,
       sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : 0,
       isActive: isActive !== undefined ? (isActive === 'true' || isActive === true) : true,
@@ -85,10 +88,10 @@ const addToSeasonCollection = async (req, res, next) => {
     });
 
     await AdminLog.create({
-      adminId: req.admin.id,
+      adminId: req.admin._id || req.admin.id,
       action: `Added product ID ${productId} to Season Collection`,
       entityType: 'season_collection',
-      entityId: item.id,
+      entityId: item._id,
       ipAddress: req.ip
     });
 
@@ -103,7 +106,7 @@ const addToSeasonCollection = async (req, res, next) => {
 // @access  Private
 const updateSeasonCollectionItem = async (req, res, next) => {
   try {
-    const item = await SeasonCollection.findByPk(req.params.id);
+    const item = await SeasonCollection.findById(req.params.id);
 
     if (!item) {
       return res.status(404).json({ success: false, error: 'Season Collection item not found' });
@@ -119,10 +122,10 @@ const updateSeasonCollectionItem = async (req, res, next) => {
     await item.save();
 
     await AdminLog.create({
-      adminId: req.admin.id,
-      action: `Updated Season Collection item ID ${item.id}`,
+      adminId: req.admin._id || req.admin.id,
+      action: `Updated Season Collection item ID ${item._id}`,
       entityType: 'season_collection',
-      entityId: item.id,
+      entityId: item._id,
       ipAddress: req.ip
     });
 
@@ -137,17 +140,17 @@ const updateSeasonCollectionItem = async (req, res, next) => {
 // @access  Private
 const removeFromSeasonCollection = async (req, res, next) => {
   try {
-    const item = await SeasonCollection.findByPk(req.params.id);
+    const item = await SeasonCollection.findById(req.params.id);
 
     if (!item) {
       return res.status(404).json({ success: false, error: 'Season Collection item not found' });
     }
 
-    const itemId = item.id;
-    await item.destroy();
+    const itemId = item._id;
+    await item.deleteOne();
 
     await AdminLog.create({
-      adminId: req.admin.id,
+      adminId: req.admin._id || req.admin.id,
       action: `Removed item ID ${itemId} from Season Collection`,
       entityType: 'season_collection',
       entityId: itemId,
