@@ -157,7 +157,8 @@ const createProduct = async (req, res, next) => {
       callToAction,
       preFilledMessage,
       displaySettings,
-      imageColors
+      imageColors,
+      colors
     } = req.body;
 
     // Check SKU unique
@@ -185,6 +186,11 @@ const createProduct = async (req, res, next) => {
       }
     }
 
+    let parsedColors = [];
+    if (colors) {
+      parsedColors = Array.isArray(colors) ? colors : (typeof colors === 'string' ? colors.split(',').map(c => c.trim()).filter(Boolean) : []);
+    }
+
     const product = await Product.create({
       name,
       slug,
@@ -201,6 +207,7 @@ const createProduct = async (req, res, next) => {
       status: status || 'draft',
       isFeatured: isFeatured === 'true' || isFeatured === true,
       thumbnail,
+      colors: parsedColors,
       category: categoryId || null,
       brand: brandId || null,
       variants: parsedVariants,
@@ -309,7 +316,8 @@ const updateProduct = async (req, res, next) => {
       callToAction,
       preFilledMessage,
       displaySettings,
-      imageColors
+      imageColors,
+      colors
     } = req.body;
 
     if (sku && sku !== product.sku) {
@@ -348,6 +356,10 @@ const updateProduct = async (req, res, next) => {
     product.callToAction = callToAction !== undefined ? callToAction : product.callToAction;
     product.preFilledMessage = preFilledMessage !== undefined ? preFilledMessage : product.preFilledMessage;
     product.displaySettings = displaySettings !== undefined ? displaySettings : product.displaySettings;
+
+    if (colors !== undefined) {
+      product.colors = Array.isArray(colors) ? colors : (typeof colors === 'string' ? colors.split(',').map(c => c.trim()).filter(Boolean) : []);
+    }
 
     if (countdownEvergreen !== undefined) {
       product.countdownEvergreen = countdownEvergreen === 'true' || countdownEvergreen === true;

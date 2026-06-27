@@ -72,6 +72,9 @@ const ProductSchema = new mongoose.Schema({
   thumbnail: {
     type: String
   },
+  colors: [{
+    type: String
+  }],
   variants: {
     type: mongoose.Schema.Types.Mixed
   },
