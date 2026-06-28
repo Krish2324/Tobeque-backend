@@ -407,7 +407,7 @@ const uploadProfilePhoto = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    const photoUrl = `/uploads/users/${req.file.filename}`;
+    const photoUrl = req.file.path;
     user.profilePhoto = photoUrl;
     await user.save();
 

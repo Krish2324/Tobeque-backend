@@ -24,7 +24,7 @@ const createBanner = async (req, res, next) => {
 
     let imageUrl = '';
     if (req.file) {
-      imageUrl = `/uploads/banners/${req.file.filename}`;
+      imageUrl = req.file.path;
     } else {
       return res.status(400).json({ success: false, error: 'Please upload a banner image file' });
     }
@@ -77,7 +77,7 @@ const updateBanner = async (req, res, next) => {
     banner.status = status !== undefined ? status : banner.status;
 
     if (req.file) {
-      banner.imageUrl = `/uploads/banners/${req.file.filename}`;
+      banner.imageUrl = req.file.path;
     }
 
     await banner.save();

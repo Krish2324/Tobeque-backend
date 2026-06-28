@@ -1,43 +1,40 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+require('dotenv').config();
 
-// Ensure upload folders exist
-const ensureDirExists = (dirPath) => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-};
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Configure Storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
     // Dynamic subfolders depending on entity
-    let folder = 'uploads/';
+    let folder = 'tobeque/misc';
     
     if (req.originalUrl.includes('products')) {
-      folder += 'products/';
+      folder = 'tobeque/products';
     } else if (req.originalUrl.includes('banners')) {
-      folder += 'banners/';
+      folder = 'tobeque/banners';
     } else if (req.originalUrl.includes('season-collection')) {
-      folder += 'season/';
+      folder = 'tobeque/season';
     } else if (req.originalUrl.includes('settings') || req.originalUrl.includes('site')) {
-      folder += 'site/';
+      folder = 'tobeque/site';
     } else if (req.originalUrl.includes('profile')) {
-      folder += 'users/';
-    } else {
-      folder += 'misc/';
+      folder = 'tobeque/users';
     }
 
-    const fullPath = path.join(__dirname, '..', folder);
-    ensureDirExists(fullPath);
-    cb(null, fullPath);
-  },
-  filename: (req, file, cb) => {
-    // Clean and unique filenames
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const cleanExt = path.extname(file.originalname).toLowerCase();
-    cb(null, `${file.fieldname}-${uniqueSuffix}${cleanExt}`);
+    return {
+      folder: folder,
+      resource_type: 'auto', // Allows both images and videos
+      public_id: `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    };
   }
 });
 

@@ -31,7 +31,7 @@ const updateSettings = async (req, res, next) => {
 
     // Upload new logo if provided
     if (req.file) {
-      settingsPayload['site_logo'] = `/uploads/site/${req.file.filename}`;
+      settingsPayload['site_logo'] = req.file.path;
     }
 
     const updatePromises = Object.keys(settingsPayload).map(async (key) => {

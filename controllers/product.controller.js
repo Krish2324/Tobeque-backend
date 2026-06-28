@@ -173,7 +173,7 @@ const createProduct = async (req, res, next) => {
     // Get thumbnail from uploaded files (Multer saves to req.file or req.files)
     let thumbnail = '';
     if (req.files && req.files.thumbnail) {
-      thumbnail = `/uploads/products/${req.files.thumbnail[0].filename}`;
+      thumbnail = req.files.thumbnail[0].path;
     }
 
     // Parse variants if they are sent as JSON strings
@@ -246,7 +246,7 @@ const createProduct = async (req, res, next) => {
       }
       const imageRecords = req.files.images.map((img, idx) => ({
         product: product.id,
-        imageUrl: `/uploads/products/${img.filename}`,
+        imageUrl: img.path,
         color: parsedImageColors[idx] || null
       }));
       await ProductImage.insertMany(imageRecords);
@@ -401,7 +401,7 @@ const updateProduct = async (req, res, next) => {
 
     // Set new thumbnail if uploaded
     if (req.files && req.files.thumbnail) {
-      product.thumbnail = `/uploads/products/${req.files.thumbnail[0].filename}`;
+      product.thumbnail = req.files.thumbnail[0].path;
     }
 
     // Parse and update variants
@@ -427,7 +427,7 @@ const updateProduct = async (req, res, next) => {
       }
       const imageRecords = req.files.images.map((img, idx) => ({
         product: product.id,
-        imageUrl: `/uploads/products/${img.filename}`,
+        imageUrl: img.path,
         color: parsedImageColors[idx] || null
       }));
       await ProductImage.insertMany(imageRecords);

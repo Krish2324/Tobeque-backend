@@ -49,10 +49,10 @@ const createCategory = async (req, res, next) => {
 
     if (req.files) {
       if (req.files.image) {
-        image = `/uploads/products/${req.files.image[0].filename}`;
+        image = req.files.image[0].path;
       }
       if (req.files.banner) {
-        banner = `/uploads/products/${req.files.banner[0].filename}`;
+        banner = req.files.banner[0].path;
       }
     }
 
@@ -116,10 +116,10 @@ const updateCategory = async (req, res, next) => {
 
     if (req.files) {
       if (req.files.image) {
-        category.image = `/uploads/products/${req.files.image[0].filename}`;
+        category.image = req.files.image[0].path;
       }
       if (req.files.banner) {
-        category.banner = `/uploads/products/${req.files.banner[0].filename}`;
+        category.banner = req.files.banner[0].path;
       }
     }
 
@@ -202,7 +202,7 @@ const createBrand = async (req, res, next) => {
 
     let logo = '';
     if (req.file) {
-      logo = `/uploads/products/${req.file.filename}`;
+      logo = req.file.path;
     }
 
     const brand = await Brand.create({
@@ -249,7 +249,7 @@ const updateBrand = async (req, res, next) => {
     brand.description = description !== undefined ? description : brand.description;
 
     if (req.file) {
-      brand.logo = `/uploads/products/${req.file.filename}`;
+      brand.logo = req.file.path;
     }
 
     await brand.save();
