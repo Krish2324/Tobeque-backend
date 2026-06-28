@@ -4,9 +4,12 @@ const { getBanners, createBanner, updateBanner, deleteBanner } = require('../con
 const { protect, authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
+// Public Routes
+router.get('/', getBanners);
+
+// Protected Admin Routes
 router.use(protect);
 
-router.get('/', getBanners);
 router.post('/', upload.single('image'), createBanner);
 router.put('/:id', upload.single('image'), updateBanner);
 router.delete('/:id', authorize('superadmin', 'manager'), deleteBanner);
