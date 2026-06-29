@@ -433,6 +433,28 @@ const updateProduct = async (req, res, next) => {
       await ProductImage.insertMany(imageRecords);
     }
 
+    // Patch color on existing images if the admin updated color tags
+    const { existingImageColors } = req.body;
+    if (existingImageColors) {
+      let colorMap;
+      try {
+        colorMap = typeof existingImageColors === 'string' ? JSON.parse(existingImageColors) : existingImageColors;
+      } catch (e) {
+        colorMap = null;
+      }
+      if (colorMap && typeof colorMap === 'object') {
+        const bulkOps = Object.entries(colorMap).map(([imgId, color]) => ({
+          updateOne: {
+            filter: { _id: imgId, product: product.id },
+            update: { $set: { color: color || null } }
+          }
+        }));
+        if (bulkOps.length > 0) {
+          await ProductImage.bulkWrite(bulkOps);
+        }
+      }
+    }
+
     // Log Admin action
     await AdminLog.create({
       adminId: req.admin.id,
