@@ -1,4 +1,5 @@
 const { SeasonCollection, Category, AdminLog } = require('../models');
+const { deleteCloudinaryAsset } = require('../utils/cloudinary');
 
 // @desc    Get Season Collection (Public - for the website)
 // @route   GET /api/season-collection
@@ -56,10 +57,15 @@ const getSeasonCollectionAdmin = async (req, res, next) => {
 // @access  Private
 const addToSeasonCollection = async (req, res, next) => {
   try {
-    const { categoryId, displayLabel, sortOrder, isActive, imageOverride } = req.body;
+    const { categoryId, displayLabel, sortOrder, isActive } = req.body;
+    let { imageOverride } = req.body;
 
     if (!categoryId) {
       return res.status(400).json({ success: false, error: 'categoryId is required' });
+    }
+
+    if (req.file) {
+      imageOverride = req.file.path;
     }
 
     // Check if already in collection
@@ -104,12 +110,23 @@ const updateSeasonCollectionItem = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Season Collection item not found' });
     }
 
-    const { displayLabel, sortOrder, isActive, imageOverride } = req.body;
+    const { displayLabel, sortOrder, isActive } = req.body;
+    let { imageOverride } = req.body;
+
+    if (req.file) {
+      imageOverride = req.file.path;
+    }
 
     if (displayLabel !== undefined) item.displayLabel = displayLabel;
     if (sortOrder !== undefined) item.sortOrder = parseInt(sortOrder);
     if (isActive !== undefined) item.isActive = isActive === 'true' || isActive === true;
-    if (imageOverride !== undefined) item.imageOverride = imageOverride || null;
+    if (imageOverride !== undefined) {
+      // If replacing an old uploaded image, clean up old one from Cloudinary
+      if (item.imageOverride && item.imageOverride !== imageOverride) {
+        await deleteCloudinaryAsset(item.imageOverride);
+      }
+      item.imageOverride = imageOverride || null;
+    }
 
     await item.save();
 
@@ -139,7 +156,14 @@ const removeFromSeasonCollection = async (req, res, next) => {
     }
 
     const itemId = item._id;
+    const imageToDelete = item.imageOverride;
+
     await item.deleteOne();
+
+    // Clean up uploaded image from Cloudinary (only if it's a Cloudinary URL)
+    if (imageToDelete) {
+      await deleteCloudinaryAsset(imageToDelete);
+    }
 
     await AdminLog.create({
       adminId: req.admin._id || req.admin.id,

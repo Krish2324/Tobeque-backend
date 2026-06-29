@@ -1,4 +1,5 @@
 const { Product, ProductImage, Category, Brand, InventoryLog, AdminLog, Review } = require('../models');
+const { deleteCloudinaryAsset, deleteCloudinaryAssets } = require('../utils/cloudinary');
 
 // Helper to slugify strings
 const slugify = (text) => {
@@ -401,6 +402,10 @@ const updateProduct = async (req, res, next) => {
 
     // Set new thumbnail if uploaded
     if (req.files && req.files.thumbnail) {
+      // Delete the old thumbnail from Cloudinary before replacing
+      if (product.thumbnail) {
+        await deleteCloudinaryAsset(product.thumbnail);
+      }
       product.thumbnail = req.files.thumbnail[0].path;
     }
 
@@ -486,6 +491,11 @@ const deleteProduct = async (req, res, next) => {
 
     const prodName = product.name;
     const prodId = product.id;
+    const thumbnail = product.thumbnail;
+
+    // Fetch all gallery image URLs before deleting DB records
+    const galleryImages = await ProductImage.find({ product: prodId }).select('imageUrl').lean();
+    const galleryUrls = galleryImages.map(img => img.imageUrl);
 
     // Manually delete dependent records
     await ProductImage.deleteMany({ product: prodId });
@@ -493,6 +503,10 @@ const deleteProduct = async (req, res, next) => {
     await Review.deleteMany({ product: prodId });
 
     await product.deleteOne();
+
+    // Clean up all images from Cloudinary (thumbnail + gallery) in background
+    const allImageUrls = [thumbnail, ...galleryUrls].filter(Boolean);
+    await deleteCloudinaryAssets(allImageUrls);
 
     await AdminLog.create({
       adminId: req.admin.id,
@@ -529,7 +543,13 @@ const deleteProductImage = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Image not found' });
     }
 
+    const imageUrl = image.imageUrl;
     await image.deleteOne();
+
+    // Clean up from Cloudinary
+    if (imageUrl) {
+      await deleteCloudinaryAsset(imageUrl);
+    }
 
     await AdminLog.create({
       adminId: req.admin.id,

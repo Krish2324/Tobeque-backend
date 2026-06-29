@@ -1,4 +1,5 @@
 const { Category, Brand, AdminLog } = require('../models');
+const { deleteCloudinaryAsset, deleteCloudinaryAssets } = require('../utils/cloudinary');
 
 // Helper to slugify
 const slugify = (text) => {
@@ -116,9 +117,11 @@ const updateCategory = async (req, res, next) => {
 
     if (req.files) {
       if (req.files.image) {
+        if (category.image) await deleteCloudinaryAsset(category.image);
         category.image = req.files.image[0].path;
       }
       if (req.files.banner) {
+        if (category.banner) await deleteCloudinaryAsset(category.banner);
         category.banner = req.files.banner[0].path;
       }
     }
@@ -155,8 +158,12 @@ const deleteCategory = async (req, res, next) => {
 
     const catName = category.name;
     const catId = category.id;
+    const catImages = [category.image, category.banner].filter(Boolean);
 
     await category.deleteOne();
+
+    // Clean up category images from Cloudinary
+    await deleteCloudinaryAssets(catImages);
 
     await AdminLog.create({
       adminId: req.admin.id,
@@ -249,6 +256,7 @@ const updateBrand = async (req, res, next) => {
     brand.description = description !== undefined ? description : brand.description;
 
     if (req.file) {
+      if (brand.logo) await deleteCloudinaryAsset(brand.logo);
       brand.logo = req.file.path;
     }
 
@@ -283,8 +291,12 @@ const deleteBrand = async (req, res, next) => {
 
     const brandName = brand.name;
     const brandId = brand.id;
+    const brandLogo = brand.logo;
 
     await brand.deleteOne();
+
+    // Clean up brand logo from Cloudinary
+    if (brandLogo) await deleteCloudinaryAsset(brandLogo);
 
     await AdminLog.create({
       adminId: req.admin.id,

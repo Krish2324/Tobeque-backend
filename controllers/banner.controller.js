@@ -1,4 +1,5 @@
 const { Banner, AdminLog } = require('../models');
+const { deleteCloudinaryAsset } = require('../utils/cloudinary');
 
 // @desc    Get List of Banners
 // @route   GET /api/banners
@@ -77,6 +78,10 @@ const updateBanner = async (req, res, next) => {
     banner.status = status !== undefined ? status : banner.status;
 
     if (req.file) {
+      // Delete old image from Cloudinary before replacing
+      if (banner.imageUrl) {
+        await deleteCloudinaryAsset(banner.imageUrl);
+      }
       banner.imageUrl = req.file.path;
     }
 
@@ -112,8 +117,14 @@ const deleteBanner = async (req, res, next) => {
 
     const bannerTitle = banner.title || 'Untitled';
     const bannerId = banner.id;
+    const bannerImageUrl = banner.imageUrl;
 
     await banner.deleteOne();
+
+    // Clean up image from Cloudinary
+    if (bannerImageUrl) {
+      await deleteCloudinaryAsset(bannerImageUrl);
+    }
 
     await AdminLog.create({
       adminId: req.admin.id,
