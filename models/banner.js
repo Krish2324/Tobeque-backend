@@ -16,7 +16,7 @@ const BannerSchema = new mongoose.Schema({
   },
   position: {
     type: String,
-    enum: ['home_slider', 'promo_banner', 'mobile_banner'],
+    enum: ['home_slider', 'promo_top', 'promo_bottom', 'mobile_app', 'promo_banner', 'mobile_banner', 'collection_hero'],
     default: 'home_slider'
   },
   sortOrder: {
