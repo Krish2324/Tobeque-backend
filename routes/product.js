@@ -15,7 +15,8 @@ router.post(
   protect,
   upload.fields([
     { name: 'thumbnail', maxCount: 1 },
-    { name: 'images', maxCount: 10 }
+    { name: 'images', maxCount: 10 },
+    { name: 'hotRightNowMedia', maxCount: 1 }
   ]),
   createProduct
 );
@@ -25,7 +26,8 @@ router.put(
   protect,
   upload.fields([
     { name: 'thumbnail', maxCount: 1 },
-    { name: 'images', maxCount: 10 }
+    { name: 'images', maxCount: 10 },
+    { name: 'hotRightNowMedia', maxCount: 1 }
   ]),
   updateProduct
 );

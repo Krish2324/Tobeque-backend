@@ -25,6 +25,8 @@ const getProducts = async (req, res, next) => {
       brand,
       status,
       featured,
+      isOnSaleSection,
+      isHotRightNow,
       sortBy = 'createdAt',
       sortDir = 'DESC'
     } = req.query;
@@ -69,6 +71,14 @@ const getProducts = async (req, res, next) => {
 
     if (featured !== undefined) {
       where.isFeatured = featured === 'true';
+    }
+
+    if (isOnSaleSection !== undefined) {
+      where.isOnSaleSection = isOnSaleSection === 'true';
+    }
+
+    if (isHotRightNow !== undefined) {
+      where.isHotRightNow = isHotRightNow === 'true';
     }
 
     const count = await Product.countDocuments(where);
@@ -139,6 +149,8 @@ const createProduct = async (req, res, next) => {
       dimensions,
       status,
       isFeatured,
+      isOnSaleSection,
+      isHotRightNow,
       categoryId,
       brandId,
       variants,
@@ -177,6 +189,11 @@ const createProduct = async (req, res, next) => {
       thumbnail = req.files.thumbnail[0].path;
     }
 
+    let hotRightNowMedia = '';
+    if (req.files && req.files.hotRightNowMedia) {
+      hotRightNowMedia = req.files.hotRightNowMedia[0].path;
+    }
+
     // Parse variants if they are sent as JSON strings
     let parsedVariants = variants;
     if (typeof variants === 'string') {
@@ -207,6 +224,9 @@ const createProduct = async (req, res, next) => {
       dimensions,
       status: status || 'draft',
       isFeatured: isFeatured === 'true' || isFeatured === true,
+      isOnSaleSection: isOnSaleSection === 'true' || isOnSaleSection === true,
+      isHotRightNow: isHotRightNow === 'true' || isHotRightNow === true,
+      hotRightNowMedia,
       thumbnail,
       colors: parsedColors,
       category: categoryId || null,
@@ -298,6 +318,8 @@ const updateProduct = async (req, res, next) => {
       dimensions,
       status,
       isFeatured,
+      isOnSaleSection,
+      isHotRightNow,
       categoryId,
       brandId,
       variants,
@@ -381,6 +403,12 @@ const updateProduct = async (req, res, next) => {
     if (isFeatured !== undefined) {
       product.isFeatured = isFeatured === 'true' || isFeatured === true;
     }
+    if (isOnSaleSection !== undefined) {
+      product.isOnSaleSection = isOnSaleSection === 'true' || isOnSaleSection === true;
+    }
+    if (isHotRightNow !== undefined) {
+      product.isHotRightNow = isHotRightNow === 'true' || isHotRightNow === true;
+    }
 
     // Set new stock
     if (stockQuantity !== undefined) {
@@ -407,6 +435,13 @@ const updateProduct = async (req, res, next) => {
         await deleteCloudinaryAsset(product.thumbnail);
       }
       product.thumbnail = req.files.thumbnail[0].path;
+    }
+
+    if (req.files && req.files.hotRightNowMedia) {
+      if (product.hotRightNowMedia) {
+        await deleteCloudinaryAsset(product.hotRightNowMedia);
+      }
+      product.hotRightNowMedia = req.files.hotRightNowMedia[0].path;
     }
 
     // Parse and update variants
@@ -492,6 +527,7 @@ const deleteProduct = async (req, res, next) => {
     const prodName = product.name;
     const prodId = product.id;
     const thumbnail = product.thumbnail;
+    const hotRightNowMedia = product.hotRightNowMedia;
 
     // Fetch all gallery image URLs before deleting DB records
     const galleryImages = await ProductImage.find({ product: prodId }).select('imageUrl').lean();
@@ -505,7 +541,7 @@ const deleteProduct = async (req, res, next) => {
     await product.deleteOne();
 
     // Clean up all images from Cloudinary (thumbnail + gallery) in background
-    const allImageUrls = [thumbnail, ...galleryUrls].filter(Boolean);
+    const allImageUrls = [thumbnail, hotRightNowMedia, ...galleryUrls].filter(Boolean);
     await deleteCloudinaryAssets(allImageUrls);
 
     await AdminLog.create({

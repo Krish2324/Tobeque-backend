@@ -69,6 +69,17 @@ const ProductSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isOnSaleSection: {
+    type: Boolean,
+    default: false
+  },
+  isHotRightNow: {
+    type: Boolean,
+    default: false
+  },
+  hotRightNowMedia: {
+    type: String
+  },
   thumbnail: {
     type: String
   },
