@@ -65,6 +65,7 @@ app.use('/api/inquiries', require('./routes/inquiryRoutes'));
 app.use('/api/faqs', require('./routes/faq'));
 app.use('/api/job-applications', require('./routes/jobApplication'));
 app.use('/api/refund-requests', require('./routes/refundRequest'));
+app.use('/api/subscribers', require('./routes/subscriber'));
 
 // Root Status check
 app.get('/api/status', (req, res) => {
