@@ -15,6 +15,8 @@ const InventoryLog = require('./inventoryLog');
 const AdminLog = require('./adminLog');
 const Setting = require('./setting');
 const SeasonCollection = require('./seasonCollection');
+const FAQ = require('./faq');
+const JobApplication = require('./jobApplication');
 
 module.exports = {
   sequelize: mongoose, // Keep database interface name compatible
@@ -34,5 +36,7 @@ module.exports = {
   InventoryLog,
   AdminLog,
   Setting,
-  SeasonCollection
+  SeasonCollection,
+  FAQ,
+  JobApplication
 };

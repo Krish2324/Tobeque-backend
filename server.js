@@ -62,6 +62,8 @@ app.use('/api/settings', require('./routes/setting'));
 app.use('/api/user-auth', require('./routes/userAuth'));
 app.use('/api/season-collection', require('./routes/seasonCollection'));
 app.use('/api/inquiries', require('./routes/inquiryRoutes'));
+app.use('/api/faqs', require('./routes/faq'));
+app.use('/api/job-applications', require('./routes/jobApplication'));
 
 // Root Status check
 app.get('/api/status', (req, res) => {
