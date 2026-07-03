@@ -13,15 +13,24 @@ const {
   optionalUserAuth
 } = require('../controllers/jobApplication.controller');
 
-// Cloudinary storage for CVs (raw documents)
-const cvStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => ({
-    folder: 'tobeque/cvs',
-    resource_type: 'raw',
-    public_id: `cv-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-    format: path.extname(file.originalname).slice(1).toLowerCase()
-  })
+const fs = require('fs');
+
+// Ensure the uploads/cvs directory exists
+const cvsDir = path.join(__dirname, '../uploads/cvs');
+if (!fs.existsSync(cvsDir)) {
+  fs.mkdirSync(cvsDir, { recursive: true });
+}
+
+// Local disk storage for CVs
+const cvStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, cvsDir);
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'cv-' + uniqueSuffix + ext);
+  }
 });
 
 const cvFileFilter = (req, file, cb) => {

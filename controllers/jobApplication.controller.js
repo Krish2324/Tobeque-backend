@@ -40,7 +40,7 @@ const submitApplication = async (req, res, next) => {
       email,
       phone,
       bio,
-      cvUrl: req.file.path,
+      cvUrl: req.file.filename ? `/uploads/cvs/${req.file.filename}` : req.file.path,
       cvOriginalName: req.file.originalname,
       userId: req.user ? req.user._id : null
     });
@@ -104,16 +104,49 @@ const updateApplicationStatus = async (req, res, next) => {
   }
 };
 
+const fs = require('fs');
+const path = require('path');
+const cloudinary = require('cloudinary').v2;
+
 // @desc    Delete application (admin)
 // @route   DELETE /api/job-applications/:id
 // @access  Private (Admin)
 const deleteApplication = async (req, res, next) => {
   try {
-    const application = await JobApplication.findByIdAndDelete(req.params.id);
+    const application = await JobApplication.findById(req.params.id);
     if (!application) {
       return res.status(404).json({ success: false, error: 'Application not found' });
     }
-    res.json({ success: true, message: 'Application deleted' });
+
+    // Delete associated file
+    if (application.cvUrl) {
+      if (application.cvUrl.startsWith('/uploads/')) {
+        // Local file
+        const filePath = path.join(__dirname, '..', application.cvUrl);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } else if (application.cvUrl.includes('cloudinary.com')) {
+        // Cloudinary file
+        try {
+          // Extract public_id from Cloudinary URL (e.g. .../v1234567/tobeque/cvs/cv-xxx.pdf)
+          const urlParts = application.cvUrl.split('/');
+          const uploadIndex = urlParts.findIndex(part => part === 'upload');
+          if (uploadIndex !== -1 && urlParts.length > uploadIndex + 2) {
+            // Join the rest of the parts after version
+            let publicIdWithExt = urlParts.slice(uploadIndex + 2).join('/');
+            // For raw files, Cloudinary needs the public_id WITH extension
+            await cloudinary.uploader.destroy(publicIdWithExt, { resource_type: 'raw' });
+          }
+        } catch (err) {
+          console.error('Failed to delete CV from Cloudinary:', err);
+        }
+      }
+    }
+
+    await JobApplication.findByIdAndDelete(req.params.id);
+
+    res.json({ success: true, message: 'Application and associated CV deleted' });
   } catch (error) {
     next(error);
   }
