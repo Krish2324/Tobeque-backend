@@ -31,6 +31,9 @@ const OrderSchema = new mongoose.Schema({
     required: true,
     default: 0.00
   },
+  couponCode: {
+    type: String
+  },
   totalAmount: {
     type: Number,
     required: true,
@@ -71,6 +74,9 @@ const OrderSchema = new mongoose.Schema({
   },
   notes: {
     type: String
+  },
+  adminNotes: {
+    type: String
   }
 }, {
   timestamps: true,
@@ -80,6 +86,8 @@ const OrderSchema = new mongoose.Schema({
     transform: function (doc, ret) {
       ret.id = ret._id ? ret._id.toString() : ret.id;
       delete ret._id;
+      try { if (typeof ret.shippingAddress === 'string') ret.shippingAddress = JSON.parse(ret.shippingAddress); } catch (e) {}
+      try { if (typeof ret.billingAddress === 'string') ret.billingAddress = JSON.parse(ret.billingAddress); } catch (e) {}
     }
   },
   toObject: {
@@ -88,6 +96,8 @@ const OrderSchema = new mongoose.Schema({
     transform: function (doc, ret) {
       ret.id = ret._id ? ret._id.toString() : ret.id;
       delete ret._id;
+      try { if (typeof ret.shippingAddress === 'string') ret.shippingAddress = JSON.parse(ret.shippingAddress); } catch (e) {}
+      try { if (typeof ret.billingAddress === 'string') ret.billingAddress = JSON.parse(ret.billingAddress); } catch (e) {}
     }
   }
 });

@@ -157,7 +157,7 @@ const validateCoupon = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'This coupon has expired' });
     }
 
-    if (coupon.usageCount >= coupon.usageLimit) {
+    if (coupon.usedCount >= coupon.usageLimit) {
       return res.status(400).json({ success: false, error: 'This coupon has reached its usage limit' });
     }
 
@@ -266,7 +266,7 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Private (user)
 const createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, items, customerName, customerPhone, couponCode } = req.body;
+    const { shippingAddress, billingAddress, items, customerName, customerPhone, couponCode, paymentMethod, notes } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'No items in order' });
@@ -278,6 +278,7 @@ const createOrder = async (req, res, next) => {
     const orderNumber = `ORD-${dateStr}-${randomStr}`;
 
     let subtotal = 0;
+    let totalTaxAmount = 0;
 
     // Process items and check stock
     const processedItems = [];
@@ -289,6 +290,11 @@ const createOrder = async (req, res, next) => {
       
       const price = parseFloat(item.price);
       subtotal += price * item.quantity;
+      const taxRate = product.taxRate || 0;
+      const lineTotal = price * item.quantity;
+      const basePrice = lineTotal / (1 + (taxRate / 100));
+      const gst = lineTotal - basePrice;
+      totalTaxAmount += gst;
       
       processedItems.push({
         productId: product.id,
@@ -296,7 +302,9 @@ const createOrder = async (req, res, next) => {
         sku: product.sku,
         price: price,
         quantity: item.quantity,
-        variantDetails: item.variantDetails || null
+        variantDetails: item.variantDetails || null,
+        taxRate: taxRate,
+        taxAmount: gst
       });
     }
 
@@ -311,7 +319,7 @@ const createOrder = async (req, res, next) => {
         const now = new Date();
         const isStarted = !coupon.startDate || new Date(coupon.startDate) <= now;
         const isNotExpired = !coupon.expiryDate || new Date(coupon.expiryDate) >= now;
-        const hasUsageLeft = coupon.usageCount < coupon.usageLimit;
+        const hasUsageLeft = coupon.usedCount < coupon.usageLimit;
         const meetsMinOrder = subtotal >= parseFloat(coupon.minOrderAmount);
 
         if (isStarted && isNotExpired && hasUsageLeft && meetsMinOrder) {
@@ -325,13 +333,16 @@ const createOrder = async (req, res, next) => {
           if (discountAmount > subtotal) discountAmount = subtotal;
           
           // Increment usage count
-          coupon.usageCount += 1;
+          coupon.usedCount += 1;
           await coupon.save();
         }
       }
     }
 
-    // Tax & Shipping logic can be added later if needed. Defaults to 0 here.
+    // Reduce total tax if discount applies proportionally
+    const discountRatio = subtotal > 0 ? (discountAmount / subtotal) : 0;
+    const finalTaxAmount = totalTaxAmount * (1 - discountRatio);
+
     const totalAmount = subtotal - discountAmount;
 
     // Format address object to match Admin OrderDetail.jsx expectation
@@ -346,6 +357,9 @@ const createOrder = async (req, res, next) => {
     };
 
     const addressString = JSON.stringify(finalAddress);
+    
+    const finalBillingAddress = typeof billingAddress === 'object' ? billingAddress : finalAddress;
+    const billingAddressString = JSON.stringify(finalBillingAddress);
 
     // Create the order
     const order = await Order.create({
@@ -354,13 +368,15 @@ const createOrder = async (req, res, next) => {
       subtotal,
       totalAmount,
       orderStatus: 'pending',
-      paymentStatus: 'paid', // Dummy success
-      paymentMethod: 'card',
+      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid', // Dummy success for non-COD
+      paymentMethod: paymentMethod || 'cod',
       shippingStatus: 'pending',
       shippingAddress: addressString,
-      billingAddress: addressString,
+      billingAddress: billingAddressString,
       discountAmount,
-      couponCode: appliedCouponCode
+      taxAmount: finalTaxAmount,
+      couponCode: appliedCouponCode,
+      notes
     });
 
     // Create order items and deduct inventory
@@ -372,7 +388,9 @@ const createOrder = async (req, res, next) => {
         sku: pItem.sku,
         price: pItem.price,
         quantity: pItem.quantity,
-        variantDetails: pItem.variantDetails
+        variantDetails: pItem.variantDetails,
+        taxRate: pItem.taxRate,
+        taxAmount: pItem.taxAmount
       });
 
       // Deduct inventory

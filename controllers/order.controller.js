@@ -90,7 +90,7 @@ const getOrderById = async (req, res, next) => {
 // @access  Private
 const updateOrderStatus = async (req, res, next) => {
   try {
-    const { orderStatus, paymentStatus, shippingStatus, trackingNumber, notes } = req.body;
+    const { orderStatus, paymentStatus, shippingStatus, trackingNumber, adminNotes } = req.body;
     const order = await Order.findById(req.params.id).populate('items');
 
     if (!order) {
@@ -156,7 +156,7 @@ const updateOrderStatus = async (req, res, next) => {
     order.paymentStatus = paymentStatus || order.paymentStatus;
     order.shippingStatus = shippingStatus || order.shippingStatus;
     order.trackingNumber = trackingNumber !== undefined ? trackingNumber : order.trackingNumber;
-    order.notes = notes !== undefined ? notes : order.notes;
+    order.adminNotes = adminNotes !== undefined ? adminNotes : order.adminNotes;
 
     // Automatically synchronize shipping status depending on order status
     if (order.orderStatus === 'delivered') {
@@ -222,9 +222,45 @@ const getInvoiceDetails = async (req, res, next) => {
   }
 };
 
+// @desc    Delete Order
+// @route   DELETE /api/orders/:id
+// @access  Private
+const deleteOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    // Delete associated OrderItems and Payments
+    await OrderItem.deleteMany({ order: order._id });
+    await Payment.deleteMany({ order: order._id });
+
+    // Finally delete the order
+    await Order.findByIdAndDelete(req.params.id);
+
+    await AdminLog.create({
+      adminId: req.admin.id,
+      action: `Deleted order #${order.orderNumber}`,
+      entityType: 'order',
+      entityId: req.params.id,
+      ipAddress: req.ip
+    });
+
+    res.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getOrders,
   getOrderById,
   updateOrderStatus,
-  getInvoiceDetails
+  getInvoiceDetails,
+  deleteOrder
 };

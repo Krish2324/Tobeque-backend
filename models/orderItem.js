@@ -23,6 +23,14 @@ const OrderItemSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  taxRate: {
+    type: Number,
+    default: 0
+  },
+  taxAmount: {
+    type: Number,
+    default: 0
+  },
   quantity: {
     type: Number,
     required: true,
