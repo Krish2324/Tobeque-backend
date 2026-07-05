@@ -119,8 +119,41 @@ const toggleCustomerStatus = async (req, res, next) => {
   }
 };
 
+// @desc    Delete Customer
+// @route   DELETE /api/customers/:id
+// @access  Private
+const deleteCustomer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const customer = await User.findById(id);
+
+    if (!customer) {
+      return res.status(404).json({ success: false, error: 'Customer not found' });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    await AdminLog.create({
+      adminId: req.admin.id,
+      action: `Deleted customer ${customer.email}`,
+      entityType: 'customer',
+      entityId: id,
+      ipAddress: req.ip
+    });
+
+    res.json({
+      success: true,
+      message: 'Customer deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCustomers,
   getCustomerById,
-  toggleCustomerStatus
+  toggleCustomerStatus,
+  deleteCustomer
 };
