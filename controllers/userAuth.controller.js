@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User, Order, OrderItem, Product, Coupon } = require('../models');
+const { sendOrderConfirmationEmail } = require('../utils/emailService');
 
 // Development permanent OTP — change to real OTP generation in production
 const DEV_OTP = '123456';
@@ -400,6 +401,23 @@ const createOrder = async (req, res, next) => {
         await productToUpdate.save();
       }
     }
+
+    // ── Send Order Confirmation Email (non-blocking) ──────────────────
+    // Fetch populated items for the email
+    const populatedItems = await OrderItem.find({ order: order._id });
+    // Fetch the full user record to get email
+    const emailUser = await User.findById(req.user.id).select('firstName lastName email phone');
+    // Fire & forget — don't await so order response isn't delayed by email
+    sendOrderConfirmationEmail(order.toJSON(), emailUser, populatedItems.map(i => i.toJSON()))
+      .then(result => {
+        if (result.success) {
+          console.log(`[Order ${order.orderNumber}] Invoice email sent successfully`);
+        } else {
+          console.warn(`[Order ${order.orderNumber}] Invoice email skipped/failed: ${result.reason || result.error}`);
+        }
+      })
+      .catch(err => console.error(`[Order ${order.orderNumber}] Unexpected email error:`, err.message));
+    // ─────────────────────────────────────────────────────────────────
 
     res.status(201).json({
       success: true,
