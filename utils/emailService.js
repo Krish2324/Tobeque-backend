@@ -4,14 +4,22 @@ const nodemailer = require('nodemailer');
 //  Create Nodemailer Transporter
 // ─────────────────────────────────────────────
 const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'sandbox.smtp.mailtrap.io',
-    port: parseInt(process.env.SMTP_PORT) || 587,
+  const config = {
     auth: {
       user: process.env.SMTP_USER || '',
       pass: process.env.SMTP_PASS || ''
     }
-  });
+  };
+
+  if (process.env.SMTP_SERVICE) {
+    config.service = process.env.SMTP_SERVICE;
+  } else {
+    config.host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    config.port = parseInt(process.env.SMTP_PORT) || 587;
+    config.secure = parseInt(process.env.SMTP_PORT) === 465;
+  }
+  
+  return nodemailer.createTransport(config);
 };
 
 // ─────────────────────────────────────────────
