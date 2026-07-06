@@ -37,13 +37,28 @@ const getProducts = async (req, res, next) => {
     const where = {};
 
     if (search) {
-      const searchRegex = new RegExp(search, 'i');
+      const searchTerms = [search];
+      const s = search.toLowerCase();
+      if (s.includes('blue')) searchTerms.push('navy', 'teal', 'cyan', 'denim', 'sapphire', 'azure');
+      if (s.includes('red')) searchTerms.push('maroon', 'burgundy', 'wine', 'crimson', 'ruby');
+      if (s.includes('green')) searchTerms.push('olive', 'mint', 'emerald', 'forest', 'khaki');
+      if (s.includes('white')) searchTerms.push('ivory', 'cream', 'snow', 'off-white');
+      if (s.includes('grey') || s.includes('gray')) searchTerms.push('silver', 'charcoal', 'ash', 'slate');
+      if (s.includes('brown') || s.includes('beige')) searchTerms.push('tan', 'chocolate', 'camel', 'beige', 'mocha', 'sand', 'oatmeal');
+      if (s.includes('pink')) searchTerms.push('rose', 'magenta', 'fuchsia', 'peach');
+      if (s.includes('yellow')) searchTerms.push('mustard', 'gold', 'lemon');
+
+      const regexes = searchTerms.map(term => new RegExp(term, 'i'));
+
       where.$or = [
-        { name: searchRegex },
-        { sku: searchRegex },
-        { barcode: searchRegex },
-        { shortDescription: searchRegex },
-        { fullDescription: searchRegex }
+        { name: { $in: regexes } },
+        { sku: { $in: regexes } },
+        { barcode: { $in: regexes } },
+        { shortDescription: { $in: regexes } },
+        { fullDescription: { $in: regexes } },
+        { colors: { $in: regexes } },
+        { 'variants.color': { $in: regexes } },
+        { 'variants.Color': { $in: regexes } }
       ];
     }
 
