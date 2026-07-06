@@ -77,6 +77,12 @@ const OrderSchema = new mongoose.Schema({
   },
   adminNotes: {
     type: String
+  },
+  razorpayOrderId: {
+    type: String
+  },
+  razorpayPaymentId: {
+    type: String
   }
 }, {
   timestamps: true,

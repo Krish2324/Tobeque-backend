@@ -8,7 +8,10 @@ const {
   getUserOrders,
   updateUserProfile,
   createOrder,
-  uploadProfilePhoto
+  uploadProfilePhoto,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  getRazorpayConfig
 } = require('../controllers/userAuth.controller');
 const { protectUser } = require('../middlewares/userAuth');
 const upload = require('../middlewares/upload');
@@ -17,6 +20,7 @@ const upload = require('../middlewares/upload');
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', verifyOtp);
 router.post('/validate-coupon', validateCoupon);
+router.get('/razorpay/config', getRazorpayConfig);
 
 // Protected user routes
 router.get('/profile', protectUser, getUserProfile);
@@ -24,5 +28,7 @@ router.put('/profile', protectUser, updateUserProfile);
 router.get('/orders', protectUser, getUserOrders);
 router.post('/orders', protectUser, createOrder);
 router.post('/profile/photo', protectUser, upload.single('photo'), uploadProfilePhoto);
+router.post('/razorpay/create-order', protectUser, createRazorpayOrder);
+router.post('/razorpay/verify', protectUser, verifyRazorpayPayment);
 
 module.exports = router;

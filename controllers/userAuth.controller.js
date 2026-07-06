@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { User, Order, OrderItem, Product, Coupon } = require('../models');
 const { sendOrderConfirmationEmail } = require('../utils/emailService');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
 // Development permanent OTP — change to real OTP generation in production
 const DEV_OTP = '123456';
@@ -470,6 +472,230 @@ const uploadProfilePhoto = async (req, res, next) => {
   }
 };
 
+// @desc    Get Razorpay Public Key
+// @route   GET /api/user-auth/razorpay/config
+// @access  Public
+const getRazorpayConfig = (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      key: process.env.RAZORPAY_KEY_ID || ''
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create Razorpay Order
+// @route   POST /api/user-auth/razorpay/create-order
+// @access  Private (user)
+const createRazorpayOrder = async (req, res, next) => {
+  try {
+    const { items, couponCode } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'No items in order' });
+    }
+
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({ success: false, error: 'Razorpay keys not configured on server.' });
+    }
+
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
+    let subtotal = 0;
+    
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return res.status(404).json({ success: false, error: `Product not found for ID ${item.productId}` });
+      }
+      const price = parseFloat(item.price);
+      subtotal += price * item.quantity;
+    }
+
+    let discountAmount = 0;
+    if (couponCode) {
+      const codeUpper = couponCode.toString().toUpperCase().trim();
+      const coupon = await Coupon.findOne({ code: codeUpper, status: true });
+      if (coupon) {
+        const now = new Date();
+        const isStarted = !coupon.startDate || new Date(coupon.startDate) <= now;
+        const isNotExpired = !coupon.expiryDate || new Date(coupon.expiryDate) >= now;
+        const hasUsageLeft = coupon.usedCount < coupon.usageLimit;
+        const meetsMinOrder = subtotal >= parseFloat(coupon.minOrderAmount);
+
+        if (isStarted && isNotExpired && hasUsageLeft && meetsMinOrder) {
+          if (coupon.type === 'percentage') {
+            discountAmount = (subtotal * parseFloat(coupon.discountValue)) / 100;
+          } else {
+            discountAmount = parseFloat(coupon.discountValue);
+          }
+          if (discountAmount > subtotal) discountAmount = subtotal;
+        }
+      }
+    }
+
+    const totalAmount = subtotal - discountAmount;
+    const amountInPaise = Math.round(totalAmount * 100);
+
+    const options = {
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt: `rcpt_${req.user.id}_${Date.now()}`
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify Razorpay Payment and Place Order
+// @route   POST /api/user-auth/razorpay/verify
+// @access  Private (user)
+const verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const { 
+      razorpay_order_id, 
+      razorpay_payment_id, 
+      razorpay_signature,
+      // Pass through for createOrder
+      shippingAddress, 
+      billingAddress, 
+      items, 
+      customerName, 
+      customerPhone, 
+      couponCode, 
+      notes
+    } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, error: 'Missing payment details' });
+    }
+
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    
+    const shasum = crypto.createHmac('sha256', secret);
+    shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = shasum.digest('hex');
+
+    if (digest !== razorpay_signature) {
+      return res.status(400).json({ success: false, error: 'Payment signature verification failed. Transaction is not legit!' });
+    }
+
+    // Since signature matches, payment is legit. We inject the proper paymentMethod and call the standard createOrder logic.
+    // Instead of duplicating 150 lines, we can mock req.body.paymentMethod and call createOrder directly!
+    // But createOrder will call res.json() or next(error).
+    // So we can wrap res to intercept the success response and add our razorpay updates.
+
+    req.body.paymentMethod = 'online';
+
+    // We can just execute the logic. To avoid duplicating, let's extract the core of createOrder or just duplicate.
+    // Given the simplicity, duplicating the DB creation block is safest to not break COD flow with res.json interception.
+    
+    // -- BEGIN DUPLICATED ORDER CREATION LOGIC --
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomStr = Math.floor(1000 + Math.random() * 9000);
+    const orderNumber = `ORD-${dateStr}-${randomStr}`;
+
+    let subtotal = 0;
+    let totalTaxAmount = 0;
+    const processedItems = [];
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) return res.status(404).json({ success: false, error: `Product not found for ID ${item.productId}` });
+      const price = parseFloat(item.price);
+      subtotal += price * item.quantity;
+      const taxRate = product.taxRate || 0;
+      const lineTotal = price * item.quantity;
+      const basePrice = lineTotal / (1 + (taxRate / 100));
+      const gst = lineTotal - basePrice;
+      totalTaxAmount += gst;
+      processedItems.push({
+        productId: product.id, productName: product.name, sku: product.sku,
+        price: price, quantity: item.quantity, variantDetails: item.variantDetails || null,
+        taxRate: taxRate, taxAmount: gst
+      });
+    }
+
+    let discountAmount = 0;
+    let appliedCouponCode = null;
+    if (couponCode) {
+      const codeUpper = couponCode.toString().toUpperCase().trim();
+      const coupon = await Coupon.findOne({ code: codeUpper, status: true });
+      if (coupon) {
+        appliedCouponCode = coupon.code;
+        if (coupon.type === 'percentage') discountAmount = (subtotal * parseFloat(coupon.discountValue)) / 100;
+        else discountAmount = parseFloat(coupon.discountValue);
+        if (discountAmount > subtotal) discountAmount = subtotal;
+        coupon.usedCount += 1;
+        await coupon.save();
+      }
+    }
+
+    const discountRatio = subtotal > 0 ? (discountAmount / subtotal) : 0;
+    const finalTaxAmount = totalTaxAmount * (1 - discountRatio);
+    const totalAmount = subtotal - discountAmount;
+
+    const finalAddress = typeof shippingAddress === 'object' ? shippingAddress : {
+      name: customerName || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Customer',
+      phone: customerPhone || req.user.phone || '',
+      street: shippingAddress || req.user.address || 'N/A',
+      city: req.user.city || '', state: req.user.state || '', zip: req.user.zipCode || '', country: 'India'
+    };
+    const finalBillingAddress = typeof billingAddress === 'object' ? billingAddress : finalAddress;
+
+    const order = await Order.create({
+      user: req.user.id, orderNumber, subtotal, totalAmount, orderStatus: 'pending',
+      paymentStatus: 'paid', // Mark as PAID!
+      paymentMethod: 'online', 
+      shippingStatus: 'pending',
+      shippingAddress: JSON.stringify(finalAddress), billingAddress: JSON.stringify(finalBillingAddress),
+      discountAmount, taxAmount: finalTaxAmount, couponCode: appliedCouponCode, notes,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id
+    });
+
+    for (const pItem of processedItems) {
+      await OrderItem.create({
+        order: order._id, product: pItem.productId, productName: pItem.productName, sku: pItem.sku,
+        price: pItem.price, quantity: pItem.quantity, variantDetails: pItem.variantDetails,
+        taxRate: pItem.taxRate, taxAmount: pItem.taxAmount
+      });
+      const productToUpdate = await Product.findById(pItem.productId);
+      if (productToUpdate) {
+        productToUpdate.stockQuantity = Math.max(0, productToUpdate.stockQuantity - pItem.quantity);
+        await productToUpdate.save();
+      }
+    }
+
+    const populatedItems = await OrderItem.find({ order: order._id });
+    const emailUser = await User.findById(req.user.id).select('firstName lastName email phone');
+    sendOrderConfirmationEmail(order.toJSON(), emailUser, populatedItems.map(i => i.toJSON()))
+      .catch(err => console.error(`[Order ${order.orderNumber}] Unexpected email error:`, err.message));
+    // -- END DUPLICATED LOGIC --
+
+    res.status(201).json({
+      success: true,
+      message: 'Order created and payment verified successfully',
+      order
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
@@ -478,5 +704,8 @@ module.exports = {
   getUserOrders,
   updateUserProfile,
   createOrder,
-  uploadProfilePhoto
+  uploadProfilePhoto,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  getRazorpayConfig
 };
