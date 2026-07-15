@@ -69,6 +69,7 @@ app.use('/api/subscribers', require('./routes/subscriber'));
 // ─── Shiprocket Shipping Integration ─────────────────────────────────────────
 // NOTE: URL prefix intentionally avoids the word "shiprocket" (webhook restriction)
 app.use('/api/shipping', require('./routes/shiprocket'));
+app.use('/api/blogs', require('./routes/blog'));
 
 
 // Root Status check
