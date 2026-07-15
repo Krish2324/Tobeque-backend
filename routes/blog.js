@@ -6,10 +6,12 @@ const {
   createBlog,
   updateBlog,
   deleteBlog,
-  toggleStatus
+  toggleStatus,
+  uploadImage
 } = require('../controllers/blog.controller');
 
 const { protect, authorize } = require('../middlewares/auth');
+const upload = require('../middlewares/upload');
 
 // Public routes
 router.route('/')
@@ -21,6 +23,8 @@ router.route('/:id')
 // Protected Admin routes
 router.use(protect);
 router.use(authorize('superadmin', 'manager', 'editor'));
+
+router.post('/upload-image', upload.single('image'), uploadImage);
 
 router.route('/')
   .post(createBlog);

@@ -19,6 +19,9 @@ const FAQ = require('./faq');
 const JobApplication = require('./jobApplication');
 const Subscriber = require('./subscriber');
 const Blog = require('./blog');
+const JobPosting = require('./jobPosting');
+const CommunityStyle = require('./communityStyle');
+const AboutUs = require('./aboutUs');
 
 module.exports = {
   sequelize: mongoose, // Keep database interface name compatible
@@ -42,5 +45,8 @@ module.exports = {
   FAQ,
   JobApplication,
   Subscriber,
-  Blog
+  Blog,
+  JobPosting,
+  CommunityStyle,
+  AboutUs
 };

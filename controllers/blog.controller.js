@@ -189,3 +189,24 @@ exports.toggleStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Upload blog image
+// @route   POST /api/blogs/upload-image
+// @access  Private (Admin)
+exports.uploadImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Please upload an image file' });
+    }
+    
+    // Cloudinary URL is attached to req.file.path by multer-storage-cloudinary
+    res.status(200).json({
+      success: true,
+      data: {
+        url: req.file.path
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

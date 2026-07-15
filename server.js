@@ -70,7 +70,9 @@ app.use('/api/subscribers', require('./routes/subscriber'));
 // NOTE: URL prefix intentionally avoids the word "shiprocket" (webhook restriction)
 app.use('/api/shipping', require('./routes/shiprocket'));
 app.use('/api/blogs', require('./routes/blog'));
-
+app.use('/api/job-postings', require('./routes/jobPosting'));
+app.use('/api/community-styles', require('./routes/communityStyle'));
+app.use('/api/about-us', require('./routes/aboutUs'));
 
 // Root Status check
 app.get('/api/status', (req, res) => {
