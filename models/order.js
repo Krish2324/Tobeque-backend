@@ -83,6 +83,40 @@ const OrderSchema = new mongoose.Schema({
   },
   razorpayPaymentId: {
     type: String
+  },
+
+  // ── Shiprocket Integration Fields ──────────────────────────────────────────
+  shiprocketOrderId: {
+    type: Number, // Shiprocket's internal order ID (returned after order creation)
+    default: null
+  },
+  shiprocketShipmentId: {
+    type: Number, // Shiprocket's shipment ID (used for AWB, label, pickup)
+    default: null
+  },
+  shiprocketAWB: {
+    type: String, // Air Waybill number (main tracking number from courier)
+    default: null
+  },
+  shiprocketCourierName: {
+    type: String, // e.g. "Delhivery Surface", "BlueDart"
+    default: null
+  },
+  shiprocketStatus: {
+    type: String, // Human-readable status from Shiprocket e.g. "PICKUP SCHEDULED"
+    default: null
+  },
+  shiprocketStatusId: {
+    type: Number, // Numeric status code from Shiprocket
+    default: null
+  },
+  shiprocketLabelUrl: {
+    type: String, // PDF URL for the shipping label
+    default: null
+  },
+  shiprocketPickupDate: {
+    type: String, // Date string YYYY-MM-DD for scheduled pickup
+    default: null
   }
 }, {
   timestamps: true,
