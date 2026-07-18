@@ -121,6 +121,16 @@ const createShiprocketOrder = async (order, items) => {
 
   const isCOD = order.paymentMethod === 'cod' ? 1 : 0;
 
+  // Sanitize phone: strip country code prefix and non-digit chars, keep last 10 digits
+  const sanitizePhone = (phone) => {
+    if (!phone) return '';
+    const digits = String(phone).replace(/\D/g, '');
+    return digits.length > 10 ? digits.slice(-10) : digits;
+  };
+
+  const billingPhone = sanitizePhone(billingAddr?.phone || shippingAddr?.phone || order.user?.phone);
+  const shippingPhone = sanitizePhone(shippingAddr?.phone || order.user?.phone);
+
   const payload = {
     order_id: order.orderNumber,
     order_date: new Date(order.createdAt).toISOString().split('T')[0],
@@ -136,7 +146,7 @@ const createShiprocketOrder = async (order, items) => {
     billing_state: billingAddr?.state || shippingAddr?.state || '',
     billing_country: billingAddr?.country || shippingAddr?.country || 'India',
     billing_email: order.user?.email || '',
-    billing_phone: billingAddr?.phone || shippingAddr?.phone || order.user?.phone || '',
+    billing_phone: billingPhone,
     billing_alternate_phone: '',
 
     // Shipping Details (same as billing if not different)
@@ -150,7 +160,7 @@ const createShiprocketOrder = async (order, items) => {
     shipping_country: shippingAddr?.country || 'India',
     shipping_state: shippingAddr?.state || '',
     shipping_email: order.user?.email || '',
-    shipping_phone: shippingAddr?.phone || order.user?.phone || '',
+    shipping_phone: shippingPhone,
 
     // Order Items
     order_items: orderItems,
