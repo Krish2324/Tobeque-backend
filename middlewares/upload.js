@@ -15,18 +15,21 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    // Dynamic subfolders depending on entity
     let folder = 'tobeque/misc';
     
     if (req.originalUrl.includes('products')) {
       folder = 'tobeque/products';
+    } else if (req.originalUrl.includes('categories')) {
+      folder = 'tobeque/categories';
     } else if (req.originalUrl.includes('banners')) {
       folder = 'tobeque/banners';
     } else if (req.originalUrl.includes('season-collection')) {
       folder = 'tobeque/season';
+    } else if (req.originalUrl.includes('blogs')) {
+      folder = 'tobeque/blogs';
     } else if (req.originalUrl.includes('settings') || req.originalUrl.includes('site')) {
       folder = 'tobeque/site';
-    } else if (req.originalUrl.includes('profile')) {
+    } else if (req.originalUrl.includes('profile') || req.originalUrl.includes('customers')) {
       folder = 'tobeque/users';
     }
 

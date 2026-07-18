@@ -94,16 +94,47 @@ const assignCourier = async (req, res, next) => {
       courierId || null
     );
 
-    const awbCode = srResponse?.response?.data?.awb_code || srResponse?.awb_code;
-    const courierName = srResponse?.response?.data?.courier_name || '';
+    // Log the full response for debugging
+    console.log('[assignCourier] Full SR response:', JSON.stringify(srResponse, null, 2));
+
+    // Shiprocket has multiple possible response structures — try all known paths
+    const awbCode =
+      srResponse?.response?.data?.awb_code ||
+      srResponse?.awb_code ||
+      srResponse?.data?.awb_code ||
+      srResponse?.response?.awb_code ||
+      null;
+
+    const courierName =
+      srResponse?.response?.data?.courier_name ||
+      srResponse?.courier_name ||
+      srResponse?.data?.courier_name ||
+      srResponse?.response?.courier_name ||
+      '';
+
+    console.log(`[assignCourier] Extracted AWB: ${awbCode}, Courier: ${courierName}`);
+
+    // Even if AWB is null, Shiprocket accepted the request — log what we got
+    if (!awbCode) {
+      // Extract the actual reason from Shiprocket's response
+      const srError =
+        srResponse?.response?.data?.awb_assign_error ||
+        srResponse?.message ||
+        'No AWB returned. Check backend logs.';
+
+      console.warn('[assignCourier] ⚠️  AWB is null. Full Shiprocket response was:', JSON.stringify(srResponse, null, 2));
+      return res.status(422).json({
+        success: false,
+        error: `Shiprocket: ${srError}`,
+        rawResponse: srResponse
+      });
+    }
 
     // Save AWB and tracking number back to the order
     order.shiprocketAWB = awbCode;
     order.shiprocketCourierName = courierName;
     order.shiprocketStatus = 'READY_TO_SHIP';
-    if (awbCode) {
-      order.trackingNumber = awbCode;
-    }
+    order.trackingNumber = awbCode;
     await order.save();
 
     await AdminLog.create({

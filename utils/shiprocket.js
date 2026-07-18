@@ -226,17 +226,22 @@ const checkServiceability = async (deliveryPincode, weight = 0.5, cod = 0) => {
 const assignCourierAndGenerateAWB = async (shipmentId, courierId = null) => {
   const client = await getShiprocketClient();
 
-  const payload = { shipment_id: [shipmentId] };
+  const payload = { shipment_id: shipmentId }; // NOTE: Shiprocket expects a single number, NOT an array
   if (courierId) {
     payload.courier_id = courierId;
   }
 
   try {
     const response = await client.post('/courier/assign/awb', payload);
-    console.log(`[Shiprocket] ✅ AWB assigned for shipment ${shipmentId}:`, response.data?.response?.data?.awb_code);
+
+    // Log the full raw response so we can see what Shiprocket actually returned
+    console.log('[Shiprocket] AWB raw response:', JSON.stringify(response.data, null, 2));
+
     return response.data;
   } catch (error) {
     const msg = error.response?.data?.message || error.message;
+    // Log the full error body too
+    console.error('[Shiprocket] ❌ AWB assignment error body:', JSON.stringify(error.response?.data, null, 2));
     throw new Error(`Shiprocket AWB assignment failed: ${msg}`);
   }
 };
