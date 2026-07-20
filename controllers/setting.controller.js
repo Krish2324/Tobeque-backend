@@ -67,7 +67,12 @@ const updateSettings = async (req, res, next) => {
 
 const getPublicSettings = async (req, res, next) => {
   try {
-    const settingsList = await Setting.find({ key: { $in: ['storeName', 'storeCurrency', 'deliveryEstimateMin', 'deliveryEstimateMax'] } });
+    const settingsList = await Setting.find({
+      key: { $in: [
+        'storeName', 'storeCurrency', 'deliveryEstimateMin', 'deliveryEstimateMax',
+        'shippingFallbackRate', 'freeShippingThreshold', 'codFee'
+      ]}
+    });
     
     const settings = {};
     settingsList.forEach(setting => {

@@ -7,8 +7,67 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const { Order, OrderItem, AdminLog } = require('../models');
+const { Order, OrderItem, AdminLog, Setting } = require('../models');
 const shiprocket = require('../utils/shiprocket');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// @desc    Calculate live shipping rate for a given pincode (public endpoint)
+// @route   POST /api/shipping/calculate
+// @access  Public
+// ─────────────────────────────────────────────────────────────────────────────
+const calculateShippingRate = async (req, res, next) => {
+  try {
+    const { pincode, paymentMethod, weight } = req.body;
+
+    if (!pincode || String(pincode).length < 6) {
+      return res.status(400).json({ success: false, error: 'A valid 6-digit pincode is required.' });
+    }
+
+    // Fetch admin-configured fallback & free-shipping settings
+    const settingsList = await Setting.find({
+      key: { $in: ['shippingFallbackRate', 'freeShippingThreshold', 'codFee'] }
+    });
+    const settingsMap = {};
+    settingsList.forEach(s => { settingsMap[s.key] = parseFloat(s.value) || 0; });
+
+    const fallbackRate = settingsMap.shippingFallbackRate ?? 80;
+    const codFee = settingsMap.codFee ?? 0;
+
+    const isCOD = paymentMethod === 'cod' ? 1 : 0;
+    const packageWeight = parseFloat(weight) || parseFloat(process.env.SHIPROCKET_DEFAULT_WEIGHT) || 0.5;
+
+    let shippingCost = fallbackRate; // Start with fallback
+    let source = 'fallback';
+
+    try {
+      const srData = await shiprocket.checkServiceability(String(pincode), packageWeight, isCOD);
+      const couriers = srData?.data?.available_courier_companies || [];
+
+      if (couriers.length > 0) {
+        // Sort by total charge ascending and pick the cheapest
+        couriers.sort((a, b) => parseFloat(a.freight_charge) - parseFloat(b.freight_charge));
+        shippingCost = parseFloat(couriers[0].freight_charge) || fallbackRate;
+        source = 'shiprocket';
+      }
+    } catch (srError) {
+      // Shiprocket failed — use fallback silently
+      console.warn('[ShippingCalc] Shiprocket serviceability check failed, using fallback rate:', srError.message);
+    }
+
+    // Add COD fee on top if payment method is COD
+    const totalShipping = shippingCost + (isCOD ? codFee : 0);
+
+    return res.json({
+      success: true,
+      pincode,
+      shippingCost: Math.round(totalShipping * 100) / 100,
+      codFee: isCOD ? codFee : 0,
+      source // 'shiprocket' or 'fallback'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @desc    Push an order to Shiprocket (creates shipment on Shiprocket side)
@@ -554,6 +613,7 @@ const getShiprocketOrderStatus = async (req, res, next) => {
 };
 
 module.exports = {
+  calculateShippingRate,
   pushOrderToShiprocket,
   assignCourier,
   schedulePickup,

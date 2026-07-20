@@ -276,7 +276,7 @@ const updateUserProfile = async (req, res, next) => {
 // @access  Private (user)
 const createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, billingAddress, items, customerName, customerPhone, couponCode, paymentMethod, notes } = req.body;
+    const { shippingAddress, billingAddress, items, customerName, customerPhone, couponCode, paymentMethod, notes, shippingCost: clientShippingCost } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, error: 'No items in order' });
@@ -353,7 +353,9 @@ const createOrder = async (req, res, next) => {
     const discountRatio = subtotal > 0 ? (discountAmount / subtotal) : 0;
     const finalTaxAmount = totalTaxAmount * (1 - discountRatio);
 
-    const totalAmount = subtotal - discountAmount;
+    // Accept shipping cost from frontend (already verified by Shiprocket or fallback rate)
+    const shippingCost = parseFloat(clientShippingCost) || 0;
+    const totalAmount = subtotal - discountAmount + shippingCost;
 
     // Format address object to match Admin OrderDetail.jsx expectation
     const finalAddress = typeof shippingAddress === 'object' ? shippingAddress : {
@@ -376,9 +378,10 @@ const createOrder = async (req, res, next) => {
       user: req.user.id,
       orderNumber,
       subtotal,
+      shippingCost,
       totalAmount,
       orderStatus: 'pending',
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid', // Dummy success for non-COD
+      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
       paymentMethod: paymentMethod || 'cod',
       shippingStatus: 'pending',
       shippingAddress: addressString,
@@ -653,7 +656,8 @@ const verifyRazorpayPayment = async (req, res, next) => {
 
     const discountRatio = subtotal > 0 ? (discountAmount / subtotal) : 0;
     const finalTaxAmount = totalTaxAmount * (1 - discountRatio);
-    const totalAmount = subtotal - discountAmount;
+    const shippingCost = parseFloat(req.body.shippingCost) || 0;
+    const totalAmount = subtotal - discountAmount + shippingCost;
 
     const finalAddress = typeof shippingAddress === 'object' ? shippingAddress : {
       name: customerName || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Customer',
@@ -664,9 +668,9 @@ const verifyRazorpayPayment = async (req, res, next) => {
     const finalBillingAddress = typeof billingAddress === 'object' ? billingAddress : finalAddress;
 
     const order = await Order.create({
-      user: req.user.id, orderNumber, subtotal, totalAmount, orderStatus: 'pending',
-      paymentStatus: 'paid', // Mark as PAID!
-      paymentMethod: 'online', 
+      user: req.user.id, orderNumber, subtotal, shippingCost, totalAmount, orderStatus: 'pending',
+      paymentStatus: 'paid',
+      paymentMethod: 'online',
       shippingStatus: 'pending',
       shippingAddress: JSON.stringify(finalAddress), billingAddress: JSON.stringify(finalBillingAddress),
       discountAmount, taxAmount: finalTaxAmount, couponCode: appliedCouponCode, notes,

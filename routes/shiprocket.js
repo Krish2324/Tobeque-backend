@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middlewares/auth');
 const {
+  calculateShippingRate,
   pushOrderToShiprocket,
   assignCourier,
   schedulePickup,
@@ -15,7 +16,8 @@ const {
   getShiprocketOrderStatus
 } = require('../controllers/shiprocket.controller');
 
-// ─── Public Route (Webhook — no auth, verified by x-api-key) ─────────────────
+// ─── Public Routes (No Auth) ───────────────────────────────────────────────────────────
+router.post('/calculate', calculateShippingRate); // Live shipping rate for checkout
 // NOTE: Do NOT put the word "shiprocket" in the webhook URL per Shiprocket docs.
 // Register this URL in Shiprocket: Settings > API > Webhooks
 // URL: https://yourdomain.com/api/shipping/webhook
