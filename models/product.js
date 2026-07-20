@@ -138,7 +138,11 @@ const ProductSchema = new mongoose.Schema({
   },
   displaySettings: {
     type: String
-  }
+  },
+  styleItWith: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
+  }]
 }, {
   timestamps: true,
   toJSON: {

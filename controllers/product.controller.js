@@ -130,7 +130,8 @@ const getProductById = async (req, res, next) => {
     const product = await Product.findById(req.params.id)
       .populate('category', 'id name')
       .populate('brand', 'id name')
-      .populate('images', 'id imageUrl color');
+      .populate('images', 'id imageUrl color')
+      .populate('styleItWith', 'id name price thumbnail slug');
 
     if (!product) {
       return res.status(404).json({ success: false, error: 'Product not found' });
@@ -186,7 +187,8 @@ const createProduct = async (req, res, next) => {
       preFilledMessage,
       displaySettings,
       imageColors,
-      colors
+      colors,
+      styleItWith
     } = req.body;
 
     // Check SKU unique
@@ -222,6 +224,11 @@ const createProduct = async (req, res, next) => {
     let parsedColors = [];
     if (colors) {
       parsedColors = Array.isArray(colors) ? colors : (typeof colors === 'string' ? colors.split(',').map(c => c.trim()).filter(Boolean) : []);
+    }
+
+    let parsedStyleItWith = [];
+    if (styleItWith) {
+      parsedStyleItWith = Array.isArray(styleItWith) ? styleItWith : (typeof styleItWith === 'string' ? JSON.parse(styleItWith) : []);
     }
 
     const product = await Product.create({
@@ -262,7 +269,8 @@ const createProduct = async (req, res, next) => {
       whatsAppNumber,
       callToAction,
       preFilledMessage,
-      displaySettings
+      displaySettings,
+      styleItWith: parsedStyleItWith
     });
 
     // Record stock addition log
@@ -355,8 +363,15 @@ const updateProduct = async (req, res, next) => {
       preFilledMessage,
       displaySettings,
       imageColors,
-      colors
+      colors,
+      styleItWith
     } = req.body;
+
+    console.log("====== DEBUG UPDATE PRODUCT ======");
+    console.log("Product ID:", req.params.id);
+    console.log("Received styleItWith (type):", typeof styleItWith);
+    console.log("Received styleItWith (val):", styleItWith);
+    console.log("==================================");
 
     if (sku && sku !== product.sku) {
       const skuExists = await Product.findOne({ sku });
@@ -394,6 +409,10 @@ const updateProduct = async (req, res, next) => {
     product.callToAction = callToAction !== undefined ? callToAction : product.callToAction;
     product.preFilledMessage = preFilledMessage !== undefined ? preFilledMessage : product.preFilledMessage;
     product.displaySettings = displaySettings !== undefined ? displaySettings : product.displaySettings;
+
+    if (styleItWith !== undefined) {
+      product.styleItWith = Array.isArray(styleItWith) ? styleItWith : (typeof styleItWith === 'string' ? JSON.parse(styleItWith) : []);
+    }
 
     if (colors !== undefined) {
       product.colors = Array.isArray(colors) ? colors : (typeof colors === 'string' ? colors.split(',').map(c => c.trim()).filter(Boolean) : []);
