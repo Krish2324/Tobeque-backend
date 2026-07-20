@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const { User, Order, OrderItem, Product, Coupon } = require('../models');
 const { sendOrderConfirmationEmail } = require('../utils/emailService');
+const { sendOtpViaSMS } = require('../utils/smsService');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
-// Development permanent OTP — change to real OTP generation in production
+// Development fallback OTP if Fast2SMS key is missing
 const DEV_OTP = '123456';
 const OTP_EXPIRY_MINUTES = 30;
 
@@ -30,6 +31,11 @@ const sendOtp = async (req, res, next) => {
     // Normalize phone: remove spaces/dashes, ensure no leading zeros issue
     const normalizedPhone = String(phone).replace(/\s+/g, '').replace(/-/g, '');
 
+    // Generate random 6-digit OTP or fallback to DEV_OTP if no Fast2SMS key
+    const generatedOtp = process.env.FAST2SMS_API_KEY
+      ? Math.floor(100000 + Math.random() * 900000).toString()
+      : DEV_OTP;
+
     // Find or create user by phone
     let user = await User.findOne({ phone: normalizedPhone });
 
@@ -39,7 +45,7 @@ const sendOtp = async (req, res, next) => {
         firstName: 'Guest',
         lastName: 'User',
         email: `${normalizedPhone}@guest.local`,
-        password: DEV_OTP,
+        password: generatedOtp,
         status: 'active'
       });
     }
@@ -50,21 +56,22 @@ const sendOtp = async (req, res, next) => {
 
     // Set OTP and expiry
     const expiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-    user.otpCode = DEV_OTP;
+    user.otpCode = generatedOtp;
     user.otpExpiry = expiry;
     await user.save();
 
-    // In production, send SMS here. For dev, OTP is hardcoded to 123456.
+    // Send SMS via Fast2SMS
+    await sendOtpViaSMS(normalizedPhone, generatedOtp);
+
     res.json({
       success: true,
-      message: `OTP sent to ${normalizedPhone}. (Dev mode: use 123456)`,
-      // In production, NEVER return the OTP in the response
-      devNote: 'Development mode — OTP is always 123456'
+      message: `OTP sent to ${normalizedPhone}`
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 // @desc    Verify OTP and log in user
 // @route   POST /api/user-auth/verify-otp
